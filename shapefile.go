@@ -2,7 +2,7 @@ package goshp
 
 import (
 	"encoding/binary"
-	"os"
+	"io"
 )
 
 type ShapeType int32
@@ -62,8 +62,8 @@ func BBoxFromPoints(points []Point) (box Box) {
 type Shape interface {
 	BBox() Box
 
-	read(*os.File)
-	write(*os.File)
+	read(io.Reader)
+	write(io.Writer)
 }
 
 type Null struct {
@@ -73,11 +73,11 @@ func (n *Null) BBox() Box {
 	return Box{0.0, 0.0, 0.0, 0.0}
 }
 
-func (n *Null) read(file *os.File) {
+func (n *Null) read(file io.Reader) {
 	binary.Read(file, binary.LittleEndian, n)
 }
 
-func (n *Null) write(file *os.File) {
+func (n *Null) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, n)
 }
 
@@ -89,11 +89,11 @@ func (p *Point) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
 
-func (p *Point) read(file *os.File) {
+func (p *Point) read(file io.Reader) {
 	binary.Read(file, binary.LittleEndian, p)
 }
 
-func (p *Point) write(file *os.File) {
+func (p *Point) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p)
 }
 
@@ -109,7 +109,7 @@ func (p PolyLine) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolyLine) read(file *os.File) {
+func (p *PolyLine) read(file io.Reader) {
 	binary.Read(file, binary.LittleEndian, &p.Box)
 	binary.Read(file, binary.LittleEndian, &p.NumParts)
 	binary.Read(file, binary.LittleEndian, &p.NumPoints)
@@ -119,7 +119,7 @@ func (p *PolyLine) read(file *os.File) {
 	binary.Read(file, binary.LittleEndian, &p.Points)
 }
 
-func (p *PolyLine) write(file *os.File) {
+func (p *PolyLine) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Box)
 	binary.Write(file, binary.LittleEndian, p.NumParts)
 	binary.Write(file, binary.LittleEndian, p.NumPoints)
@@ -134,7 +134,7 @@ func (p Polygon) BBox() Box {
 	return BBoxFromPoints(p.Points) 
 }
 
-func (p *Polygon) read(file *os.File) {
+func (p *Polygon) read(file io.Reader) {
 	binary.Read(file, binary.LittleEndian, &p.Box)
 	binary.Read(file, binary.LittleEndian, &p.NumParts)
 	binary.Read(file, binary.LittleEndian, &p.NumPoints)
@@ -144,7 +144,7 @@ func (p *Polygon) read(file *os.File) {
 	binary.Read(file, binary.LittleEndian, &p.Points)
 }
 
-func (p *Polygon) write(file *os.File) {
+func (p *Polygon) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Box)
 	binary.Write(file, binary.LittleEndian, p.NumParts)
 	binary.Write(file, binary.LittleEndian, p.NumPoints)
