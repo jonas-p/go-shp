@@ -43,6 +43,22 @@ func (b *Box) Extend(box Box) {
 	}
 }
 
+// BBoxFromPoints returns the bounding box calculated
+// from points.
+func BBoxFromPoints(points []Point) (box Box) {
+	for k,p := range points {
+		if k == 0 {
+			box = Box{p.X, p.Y, p.X, p.Y}
+		} else {
+			if p.X < box.MinX { box.MinX = p.X }
+			if p.Y < box.MinY { box.MinY = p.Y }
+			if p.X > box.MaxX { box.MaxX = p.X }
+			if p.Y > box.MaxY { box.MaxY = p.Y }
+		}
+	}
+	return
+}
+
 type Shape interface {
 	BBox() Box
 
@@ -89,9 +105,8 @@ type PolyLine struct {
 	Points    []Point
 }
 
-// TODO: Rewrite to calculate actual values
 func (p PolyLine) BBox() Box {
-	return p.Box
+	return BBoxFromPoints(p.Points)
 }
 
 func (p *PolyLine) read(file *os.File) {
@@ -116,7 +131,7 @@ func (p *PolyLine) write(file *os.File) {
 type Polygon PolyLine
 
 func (p Polygon) BBox() Box {
-	return p.Box
+	return BBoxFromPoints(p.Points) 
 }
 
 func (p *Polygon) read(file *os.File) {
