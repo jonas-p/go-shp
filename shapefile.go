@@ -83,7 +83,7 @@ type Null struct {
 }
 
 // Returns the bounding box of the Null feature
-func (n *Null) BBox() Box {
+func (n Null) BBox() Box {
 	return Box{0.0, 0.0, 0.0, 0.0}
 }
 
@@ -101,7 +101,7 @@ type Point struct {
 }
 
 // Returns the bounding box of the Point feature
-func (p *Point) BBox() Box {
+func (p Point) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
 
