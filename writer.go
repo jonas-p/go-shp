@@ -24,36 +24,36 @@ type Writer struct {
 }
 
 type Field struct {
-	name      [11]byte
-	fieldtype byte
-	addr      [4]byte // not used
-	size      uint8
-	precision uint8
-	padding   [14]byte
+	Name      [11]byte
+	Fieldtype byte
+	Addr      [4]byte // not used
+	Size      uint8
+	Precision uint8
+	Padding   [14]byte
 }
 
 // Returns a StringField that can be used in SetFields to
 // initialize the DBF file.
 func StringField(name string, length uint8) Field {
 	// TODO: Error checking
-	field := Field{fieldtype: 'C', size: length}
-	copy(field.name[:], []byte(name))
+	field := Field{Fieldtype: 'C', Size: length}
+	copy(field.Name[:], []byte(name))
 	return field
 }
 
 // Returns a NumberField that can be used in SetFields to
 // initialize the DBF file.
 func NumberField(name string, length uint8) Field {
-	field := Field{fieldtype: 'N', size: length}
-	copy(field.name[:], []byte(name))
+	field := Field{Fieldtype: 'N', Size: length}
+	copy(field.Name[:], []byte(name))
 	return field
 }
 
 // Returns a LogicalField that can be used in SetFields to
 // initialize the DBF file.
 func FloatField(name string, length uint8, precision uint8) Field {
-	field := Field{fieldtype: 'F', size: length, precision: precision}
-	copy(field.name[:], []byte(name))
+	field := Field{Fieldtype: 'F', Size: length, Precision: precision}
+	copy(field.Name[:], []byte(name))
 	return field
 }
 
@@ -186,7 +186,7 @@ func (w *Writer) SetFields(fields []Field) {
 	// calculate record length
 	w.dbfRecordLength = int16(1)
 	for _, field := range w.dbfFields {
-		w.dbfRecordLength += int16(field.size)
+		w.dbfRecordLength += int16(field.Size)
 	}
 
 	// header lengh
@@ -223,7 +223,7 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	case reflect.Int:
 		buf = []byte(strconv.Itoa(value.(int)))
 	case reflect.Float64:
-		precision := w.dbfFields[field].precision
+		precision := w.dbfFields[field].Precision
 		buf = []byte(strconv.FormatFloat(value.(float64), 'f', int(precision), 64))
 	case reflect.String:
 		buf = []byte(value.(string))
@@ -237,7 +237,7 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 
 	seekTo := 1 + int64(w.dbfHeaderLength) + (int64(row) * int64(w.dbfRecordLength))
 	for n := 0; n < field; n++ {
-		seekTo += int64(w.dbfFields[n].size)
+		seekTo += int64(w.dbfFields[n].Size)
 	}
 	w.dbf.Seek(seekTo, os.SEEK_SET)
 	binary.Write(w.dbf, binary.LittleEndian, buf)
