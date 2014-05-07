@@ -23,40 +23,6 @@ type Writer struct {
 	dbfRecordLength int16
 }
 
-type Field struct {
-	Name      [11]byte
-	Fieldtype byte
-	Addr      [4]byte // not used
-	Size      uint8
-	Precision uint8
-	Padding   [14]byte
-}
-
-// Returns a StringField that can be used in SetFields to
-// initialize the DBF file.
-func StringField(name string, length uint8) Field {
-	// TODO: Error checking
-	field := Field{Fieldtype: 'C', Size: length}
-	copy(field.Name[:], []byte(name))
-	return field
-}
-
-// Returns a NumberField that can be used in SetFields to
-// initialize the DBF file.
-func NumberField(name string, length uint8) Field {
-	field := Field{Fieldtype: 'N', Size: length}
-	copy(field.Name[:], []byte(name))
-	return field
-}
-
-// Returns a LogicalField that can be used in SetFields to
-// initialize the DBF file.
-func FloatField(name string, length uint8, precision uint8) Field {
-	field := Field{Fieldtype: 'F', Size: length, Precision: precision}
-	copy(field.Name[:], []byte(name))
-	return field
-}
-
 // Creates a new Shapefile. This also creates a corresponding
 // SHX file. It is important to use Close() when done because
 // that method writes all the headers for each file (SHP, SHX

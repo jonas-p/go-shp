@@ -159,3 +159,44 @@ func (p *Polygon) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Parts)
 	binary.Write(file, binary.LittleEndian, p.Points)
 }
+
+// Field representation of a field object in the DBF file
+type Field struct {
+	Name      [11]byte
+	Fieldtype byte
+	Addr      [4]byte // not used
+	Size      uint8
+	Precision uint8
+	Padding   [14]byte
+}
+
+// Returns a string representation of the Field. Currently
+// this only returns field name.
+func (f Field) String() string {
+	return string(f.Name[:])
+}
+
+// Returns a StringField that can be used in SetFields to
+// initialize the DBF file.
+func StringField(name string, length uint8) Field {
+	// TODO: Error checking
+	field := Field{Fieldtype: 'C', Size: length}
+	copy(field.Name[:], []byte(name))
+	return field
+}
+
+// Returns a NumberField that can be used in SetFields to
+// initialize the DBF file.
+func NumberField(name string, length uint8) Field {
+	field := Field{Fieldtype: 'N', Size: length}
+	copy(field.Name[:], []byte(name))
+	return field
+}
+
+// Returns a LogicalField that can be used in SetFields to
+// initialize the DBF file.
+func FloatField(name string, length uint8, precision uint8) Field {
+	field := Field{Fieldtype: 'F', Size: length, Precision: precision}
+	copy(field.Name[:], []byte(name))
+	return field
+}
