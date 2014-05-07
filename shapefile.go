@@ -46,14 +46,22 @@ func (b *Box) Extend(box Box) {
 // BBoxFromPoints returns the bounding box calculated
 // from points.
 func BBoxFromPoints(points []Point) (box Box) {
-	for k,p := range points {
+	for k, p := range points {
 		if k == 0 {
 			box = Box{p.X, p.Y, p.X, p.Y}
 		} else {
-			if p.X < box.MinX { box.MinX = p.X }
-			if p.Y < box.MinY { box.MinY = p.Y }
-			if p.X > box.MaxX { box.MaxX = p.X }
-			if p.Y > box.MaxY { box.MaxY = p.Y }
+			if p.X < box.MinX {
+				box.MinX = p.X
+			}
+			if p.Y < box.MinY {
+				box.MinY = p.Y
+			}
+			if p.X > box.MaxX {
+				box.MaxX = p.X
+			}
+			if p.Y > box.MaxY {
+				box.MaxY = p.Y
+			}
 		}
 	}
 	return
@@ -131,7 +139,7 @@ func (p *PolyLine) write(file io.Writer) {
 type Polygon PolyLine
 
 func (p Polygon) BBox() Box {
-	return BBoxFromPoints(p.Points) 
+	return BBoxFromPoints(p.Points)
 }
 
 func (p *Polygon) read(file io.Reader) {

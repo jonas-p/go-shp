@@ -2,20 +2,38 @@ package goshp
 
 import (
 	"encoding/binary"
+	"log"
 	"math"
 	"os"
 )
 
 type Writer struct {
+	filename     string
 	shp          *os.File
 	shx          *os.File
-	dbf          *os.File
 	GeometryType ShapeType
 	num          int32
 	bbox         Box
-	fields       []Field
+
+	dbf             *os.File
+	dbfFields       []Field
+	dbfHeaderLength int16
+	dbfRecordLength int16
 }
 
+type Field struct {
+	name      [11]byte
+	fieldtype byte
+	addr      [4]byte // not used
+	size      uint8
+	decimal   uint8
+	padding   [14]byte
+}
+
+// Creates a new Shapefile. This also creates a corresponding
+// SHX file. It is important to use Close() when done because
+// that method writes all the headers for each file (SHP, SHX
+// and DBF).
 func Create(filename string, t ShapeType) (*Writer, error) {
 	filename = filename[0 : len(filename)-3]
 	shp, err := os.Create(filename + "shp")
@@ -26,16 +44,20 @@ func Create(filename string, t ShapeType) (*Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbf, err := os.Create(filename + "dbf")
-	if err != nil {
-		return nil, err
-	}
 	shp.Seek(100, os.SEEK_SET)
 	shx.Seek(100, os.SEEK_SET)
-	w := &Writer{shp: shp, shx: shx, dbf: dbf, GeometryType: t}
+	w := &Writer{
+		filename:     filename,
+		shp:          shp,
+		shx:          shx,
+		GeometryType: t,
+	}
 	return w, nil
 }
 
+// Write shape to the Shapefile. This also creates
+// a record in the SHX file and DBF file (if it is
+// initialized).
 func (w *Writer) Write(shape Shape) {
 	// increate bbox
 	if w.num == 0 {
@@ -59,17 +81,29 @@ func (w *Writer) Write(shape Shape) {
 	// write shx
 	binary.Write(w.shx, binary.BigEndian, int32((start-8)/2))
 	binary.Write(w.shx, binary.BigEndian, length)
+
+	// write empty record to dbf
+	if w.dbf != nil {
+		w.writeEmptyRecord()
+	}
 }
 
+// Closes the Shapefile. This must be used at the end of
+// the transaction because it writes the correct headers
+// to the SHP/SHX and DBF files before closing.
 func (w *Writer) Close() {
 	w.writeHeader(w.shx)
 	w.writeHeader(w.shp)
-	w.writeDbfHeader(w.dbf)
 	w.shp.Close()
 	w.shx.Close()
-	w.dbf.Close()
+
+	if w.dbf != nil {
+		w.writeDbfHeader(w.dbf)
+		w.dbf.Close()
+	}
 }
 
+// Writes SHP/SHX headers to specified file.
 func (w *Writer) writeHeader(file *os.File) {
 	filelength, _ := file.Seek(0, os.SEEK_END)
 	if filelength == 0 {
@@ -86,4 +120,96 @@ func (w *Writer) writeHeader(file *os.File) {
 	binary.Write(file, binary.LittleEndian, w.bbox)
 	// elevation, measure
 	binary.Write(file, binary.LittleEndian, []float64{0.0, 0.0, 0.0, 0.0})
+}
+
+// Returns a StringField that can be used in SetFields to
+// initialize the DBF file.
+func StringField(name string, length uint8) Field {
+	// TODO: Error checking
+	field := Field{fieldtype: 'C', size: length}
+	copy(field.name[:], []byte(name))
+	return field
+}
+
+// Write DBF header.
+func (w *Writer) writeDbfHeader(file *os.File) {
+	file.Seek(0, 0)
+	// version, year (YEAR-1990), month, day
+	binary.Write(file, binary.LittleEndian, []byte{3, 24, 5, 3})
+	// number of records
+	binary.Write(file, binary.LittleEndian, w.num)
+	// header length, record length
+	binary.Write(file, binary.LittleEndian, []int16{w.dbfHeaderLength, w.dbfRecordLength})
+	// padding
+	binary.Write(file, binary.LittleEndian, make([]byte, 20))
+
+	for _, field := range w.dbfFields {
+		binary.Write(file, binary.LittleEndian, field)
+	}
+
+	// end with return
+	file.WriteString("\r")
+}
+
+// Set fields in the DBF. This initializes the DBF file and
+// should be used prior to writing any attributes.
+func (w *Writer) SetFields(fields []Field) {
+	if w.dbf != nil {
+		log.Fatal("Cannot set fields in existing dbf")
+	}
+
+	var err error
+	w.dbf, err = os.Create(w.filename + "dbf")
+	if err != nil {
+		log.Fatal("Failed to open " + w.filename + ".dbf")
+	}
+	w.dbfFields = fields
+
+	// calculate record length
+	w.dbfRecordLength = int16(1)
+	for _, field := range w.dbfFields {
+		w.dbfRecordLength += int16(field.size)
+	}
+
+	// header lengh
+	w.dbfHeaderLength = int16(len(w.dbfFields)*32 + 33)
+
+	// fill header space with empty bytes for now
+	buf := make([]byte, w.dbfHeaderLength)
+	binary.Write(w.dbf, binary.LittleEndian, buf)
+
+	// write empty records
+	for n := int32(0); n < w.num; n++ {
+		w.writeEmptyRecord()
+	}
+}
+
+// Writes an empty record to the end of the DBF. This
+// works by seeking to the end of the file and writing
+// dbfRecordLength number of bytes. The first byte is a
+// space that indicates a new record.
+func (w *Writer) writeEmptyRecord() {
+	w.dbf.Seek(0, os.SEEK_END)
+	buf := make([]byte, w.dbfRecordLength)
+	buf[0] = ' '
+	binary.Write(w.dbf, binary.LittleEndian, buf)
+}
+
+// Writes value for field at row in the DBF. Row number
+// should be the same as the order the Shape was written
+// to the Shapefile. The field value corresponds the the
+// field in the splice used in SetFields.
+func (w *Writer) WriteAttribute(row int, field int, value string) {
+	if w.dbf == nil {
+		log.Fatal("Initialize DBF by using SetFields first")
+	}
+
+	seekTo := 1 + int64(w.dbfHeaderLength) + (int64(row) * int64(w.dbfRecordLength))
+	for n := 0; n < field; n++ {
+		seekTo += int64(w.dbfFields[n].size)
+	}
+	w.dbf.Seek(seekTo, os.SEEK_SET)
+	v := make([]byte, w.dbfFields[field].size)
+	copy(v[:], []byte(value))
+	binary.Write(w.dbf, binary.LittleEndian, v)
 }
