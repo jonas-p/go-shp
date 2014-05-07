@@ -2,6 +2,7 @@ package goshp
 
 import (
 	"encoding/binary"
+	"log"
 	"os"
 )
 
@@ -73,6 +74,8 @@ func (f *File) ReadShape() (shape Shape, err error) {
 		shape = new(PolyLine)
 	case POLYGON:
 		shape = new(Polygon)
+	default:
+		log.Fatal("Unsupported shape type")
 	}
 	shape.read(f.file)
 
