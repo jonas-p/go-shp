@@ -90,10 +90,11 @@ func (w *Writer) Close() {
 	w.shp.Close()
 	w.shx.Close()
 
-	if w.dbf != nil {
-		w.writeDbfHeader(w.dbf)
-		w.dbf.Close()
+	if w.dbf == nil {
+		w.SetFields([]Field{})
 	}
+	w.writeDbfHeader(w.dbf)
+	w.dbf.Close()
 }
 
 // Writes SHP/SHX headers to specified file.
