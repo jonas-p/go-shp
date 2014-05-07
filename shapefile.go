@@ -172,6 +172,347 @@ func (p *Polygon) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Points)
 }
 
+// Shapefile MultiPoint type
+type MultiPoint struct {
+	Box       Box
+	NumPoints int32
+	Points    []Point
+}
+
+// Returns the bounding box of the MultiPoint feature
+func (p MultiPoint) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *MultiPoint) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Points = make([]Point, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+}
+
+func (p *MultiPoint) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Points)
+}
+
+// Shapefile PointZ type
+type PointZ struct {
+	X float64
+	Y float64
+	Z float64
+	M float64
+}
+
+// Returns the bounding box of the PointZ feature
+func (p PointZ) BBox() Box {
+	return Box{p.X, p.Y, p.X, p.Y}
+}
+
+func (p *PointZ) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, p)
+}
+
+func (p *PointZ) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p)
+}
+
+// Shapefile PolyLineZ type
+type PolyLineZ struct {
+	Box       Box
+	NumParts  int32
+	NumPoints int32
+	Parts     []int32
+	Points    []Point
+	ZRange    [2]float64
+	ZArray    []float64
+	MRange    [2]float64
+	MArray    []float64
+}
+
+// Returns the bounding box of the PolyLineZ feature
+func (p PolyLineZ) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *PolyLineZ) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumParts)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Parts = make([]int32, p.NumParts)
+	p.Points = make([]Point, p.NumPoints)
+	p.ZArray = make([]float64, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Parts)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.ZRange)
+	binary.Read(file, binary.LittleEndian, &p.ZArray)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *PolyLineZ) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumParts)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Parts)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.ZRange)
+	binary.Write(file, binary.LittleEndian, p.ZArray)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile PolygonZ type
+// The PolygonZ structure is identical to the PolyLineZ structure
+type PolygonZ PolyLineZ
+
+// Returns the bounding box of the PolygonZ feature
+func (p PolygonZ) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *PolygonZ) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumParts)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Parts = make([]int32, p.NumParts)
+	p.Points = make([]Point, p.NumPoints)
+	p.ZArray = make([]float64, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Parts)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.ZRange)
+	binary.Read(file, binary.LittleEndian, &p.ZArray)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *PolygonZ) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumParts)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Parts)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.ZRange)
+	binary.Write(file, binary.LittleEndian, p.ZArray)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile MultiPointZ type
+type MultiPointZ struct {
+	Box       Box
+	NumPoints int32
+	Points    []Point
+	ZRange    [2]float64
+	ZArray    []float64
+	MRange    [2]float64
+	MArray    []float64
+}
+
+// Returns the bounding box of the MultiPointZ feature
+func (p MultiPointZ) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *MultiPointZ) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Points = make([]Point, p.NumPoints)
+	p.ZArray = make([]float64, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.ZRange)
+	binary.Read(file, binary.LittleEndian, &p.ZArray)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *MultiPointZ) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.ZRange)
+	binary.Write(file, binary.LittleEndian, p.ZArray)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile PointM type
+type PointM struct {
+	X float64
+	Y float64
+	M float64
+}
+
+// Returns the bounding box of the PointM feature
+func (p PointM) BBox() Box {
+	return Box{p.X, p.Y, p.X, p.Y}
+}
+
+func (p *PointM) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, p)
+}
+
+func (p *PointM) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p)
+}
+
+// Shapefile PolyLineM type
+type PolyLineM struct {
+	Box       Box
+	NumParts  int32
+	NumPoints int32
+	Parts     []int32
+	Points    []Point
+	MRange    [2]float64
+	MArray    []float64
+}
+
+// Returns the bounding box of the PolyLineM feature
+func (p PolyLineM) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *PolyLineM) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumParts)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Parts = make([]int32, p.NumParts)
+	p.Points = make([]Point, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Parts)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *PolyLineM) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumParts)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Parts)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile PolygonM type
+// The PolygonZ structure is identical to the PolyLineZ structure
+type PolygonM PolyLineZ
+
+// Returns the bounding box of the PolygonM feature
+func (p PolygonM) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *PolygonM) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumParts)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Parts = make([]int32, p.NumParts)
+	p.Points = make([]Point, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Parts)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *PolygonM) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumParts)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Parts)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile MultiPointM type
+type MultiPointM struct {
+	Box       Box
+	NumPoints int32
+	Points    []Point
+	MRange    [2]float64
+	MArray    []float64
+}
+
+// Returns the bounding box of the MultiPointM feature
+func (p MultiPointM) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *MultiPointM) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Points = make([]Point, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *MultiPointM) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
+// Shapefile MultiPatch type
+type MultiPatch struct {
+	Box       Box
+	NumParts  int32
+	NumPoints int32
+	Parts     []int32
+	PartTypes []int32
+	Points    []Point
+	ZRange    [2]float64
+	ZArray    []float64
+	MRange    [2]float64
+	MArray    []float64
+}
+
+// Returns the bounding box of the MultiPatch feature
+func (p MultiPatch) BBox() Box {
+	return BBoxFromPoints(p.Points)
+}
+
+func (p *MultiPatch) read(file io.Reader) {
+	binary.Read(file, binary.LittleEndian, &p.Box)
+	binary.Read(file, binary.LittleEndian, &p.NumParts)
+	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+	p.Parts = make([]int32, p.NumParts)
+	p.PartTypes = make([]int32, p.NumParts)
+	p.Points = make([]Point, p.NumPoints)
+	p.ZArray = make([]float64, p.NumPoints)
+	p.MArray = make([]float64, p.NumPoints)
+	binary.Read(file, binary.LittleEndian, &p.Parts)
+	binary.Read(file, binary.LittleEndian, &p.PartTypes)
+	binary.Read(file, binary.LittleEndian, &p.Points)
+	binary.Read(file, binary.LittleEndian, &p.ZRange)
+	binary.Read(file, binary.LittleEndian, &p.ZArray)
+	binary.Read(file, binary.LittleEndian, &p.MRange)
+	binary.Read(file, binary.LittleEndian, &p.MArray)
+}
+
+func (p *MultiPatch) write(file io.Writer) {
+	binary.Write(file, binary.LittleEndian, p.Box)
+	binary.Write(file, binary.LittleEndian, p.NumParts)
+	binary.Write(file, binary.LittleEndian, p.NumPoints)
+	binary.Write(file, binary.LittleEndian, p.Parts)
+	binary.Write(file, binary.LittleEndian, p.PartTypes)
+	binary.Write(file, binary.LittleEndian, p.Points)
+	binary.Write(file, binary.LittleEndian, p.ZRange)
+	binary.Write(file, binary.LittleEndian, p.ZArray)
+	binary.Write(file, binary.LittleEndian, p.MRange)
+	binary.Write(file, binary.LittleEndian, p.MArray)
+}
+
 // Field representation of a field object in the DBF file
 type Field struct {
 	Name      [11]byte

@@ -88,8 +88,28 @@ func (r *Reader) ReadShape() (shape Shape, err error) {
 		shape = new(PolyLine)
 	case POLYGON:
 		shape = new(Polygon)
+	case MULTIPOINT:
+		shape = new(MultiPoint)
+	case POINTZ:
+		shape = new(PointZ)
+	case POLYLINEZ:
+		shape = new(PolyLineZ)
+	case POLYGONZ:
+		shape = new(PolygonZ)
+	case MULTIPOINTZ:
+		shape = new(MultiPointZ)
+	case POINTM:
+		shape = new(PointM)
+	case POLYLINEM:
+		shape = new(PolyLineM)
+	case POLYGONM:
+		shape = new(PolygonM)
+	case MULTIPOINTM:
+		shape = new(MultiPointM)
+	case MULTIPATCH:
+		shape = new(MultiPatch)
 	default:
-		log.Fatal("Unsupported shape type")
+		log.Fatal("Unsupported shape type:", shapetype)
 	}
 	shape.read(r.shp)
 
