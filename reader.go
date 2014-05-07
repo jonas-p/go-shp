@@ -14,8 +14,8 @@ type File struct {
 	filelength   int64
 	GeometryType ShapeType
 
+	Fields          []Field
 	dbf             *os.File
-	dbfFields       []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
@@ -30,6 +30,7 @@ func Open(filename string) (*File, error) {
 	}
 	s := &File{filename: filename, shp: shp}
 	s.readHeaders()
+	s.openDbf()
 	return s, nil
 }
 
@@ -99,15 +100,14 @@ func (f *File) ReadShape() (shape Shape, err error) {
 // Opens DBF file using f.filename + "dbf". This method
 // will parse the header and fill out all dbf* values int
 // the f object.
-func (f *File) openDbf() {
+func (f *File) openDbf() (err error) {
 	if f.dbf != nil {
 		return
 	}
 
-	var err error
 	f.dbf, err = os.Open(f.filename + "dbf")
 	if err != nil {
-		log.Fatal("Failed to open DBF", err)
+		return
 	}
 
 	// read header
@@ -118,8 +118,10 @@ func (f *File) openDbf() {
 
 	f.dbf.Seek(20, os.SEEK_CUR) // skip padding
 	numFields := int(math.Floor(float64(f.dbfHeaderLength-33) / 32.0))
-	f.dbfFields = make([]Field, numFields)
-	binary.Read(f.dbf, binary.LittleEndian, &f.dbfFields)
+	f.Fields = make([]Field, numFields)
+	binary.Read(f.dbf, binary.LittleEndian, &f.Fields)
+
+	return
 }
 
 // Returns number of records in the DBF table
@@ -133,10 +135,10 @@ func (f *File) ReadAttribute(row int, field int) string {
 	f.openDbf() // make sure we have a dbf file to read from
 	seekTo := 1 + int64(f.dbfHeaderLength) + (int64(row) * int64(f.dbfRecordLength))
 	for n := 0; n < field; n++ {
-		seekTo += int64(f.dbfFields[n].Size)
+		seekTo += int64(f.Fields[n].Size)
 	}
 	f.dbf.Seek(seekTo, os.SEEK_SET)
-	buf := make([]byte, f.dbfFields[field].Size)
+	buf := make([]byte, f.Fields[field].Size)
 	f.dbf.Read(buf)
 	return strings.Trim(string(buf[:]), " ")
 }
