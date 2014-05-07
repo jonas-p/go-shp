@@ -5,6 +5,8 @@ import (
 	"log"
 	"math"
 	"os"
+	"reflect"
+	"strconv"
 )
 
 type Writer struct {
@@ -26,8 +28,33 @@ type Field struct {
 	fieldtype byte
 	addr      [4]byte // not used
 	size      uint8
-	decimal   uint8
+	precision uint8
 	padding   [14]byte
+}
+
+// Returns a StringField that can be used in SetFields to
+// initialize the DBF file.
+func StringField(name string, length uint8) Field {
+	// TODO: Error checking
+	field := Field{fieldtype: 'C', size: length}
+	copy(field.name[:], []byte(name))
+	return field
+}
+
+// Returns a NumberField that can be used in SetFields to
+// initialize the DBF file.
+func NumberField(name string, length uint8) Field {
+	field := Field{fieldtype: 'N', size: length}
+	copy(field.name[:], []byte(name))
+	return field
+}
+
+// Returns a LogicalField that can be used in SetFields to
+// initialize the DBF file.
+func FloatField(name string, length uint8, precision uint8) Field {
+	field := Field{fieldtype: 'F', size: length, precision: precision}
+	copy(field.name[:], []byte(name))
+	return field
 }
 
 // Creates a new Shapefile. This also creates a corresponding
@@ -122,15 +149,6 @@ func (w *Writer) writeHeader(file *os.File) {
 	binary.Write(file, binary.LittleEndian, []float64{0.0, 0.0, 0.0, 0.0})
 }
 
-// Returns a StringField that can be used in SetFields to
-// initialize the DBF file.
-func StringField(name string, length uint8) Field {
-	// TODO: Error checking
-	field := Field{fieldtype: 'C', size: length}
-	copy(field.name[:], []byte(name))
-	return field
-}
-
 // Write DBF header.
 func (w *Writer) writeDbfHeader(file *os.File) {
 	file.Seek(0, 0)
@@ -199,7 +217,20 @@ func (w *Writer) writeEmptyRecord() {
 // should be the same as the order the Shape was written
 // to the Shapefile. The field value corresponds the the
 // field in the splice used in SetFields.
-func (w *Writer) WriteAttribute(row int, field int, value string) {
+func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
+	var buf []byte
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Int:
+		buf = []byte(strconv.Itoa(value.(int)))
+	case reflect.Float64:
+		precision := w.dbfFields[field].precision
+		buf = []byte(strconv.FormatFloat(value.(float64), 'f', int(precision), 64))
+	case reflect.String:
+		buf = []byte(value.(string))
+	default:
+		log.Fatal("Unsupported value type:", reflect.TypeOf(value))
+	}
+
 	if w.dbf == nil {
 		log.Fatal("Initialize DBF by using SetFields first")
 	}
@@ -209,7 +240,5 @@ func (w *Writer) WriteAttribute(row int, field int, value string) {
 		seekTo += int64(w.dbfFields[n].size)
 	}
 	w.dbf.Seek(seekTo, os.SEEK_SET)
-	v := make([]byte, w.dbfFields[field].size)
-	copy(v[:], []byte(value))
-	binary.Write(w.dbf, binary.LittleEndian, v)
+	binary.Write(w.dbf, binary.LittleEndian, buf)
 }
