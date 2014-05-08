@@ -1,4 +1,4 @@
-package goshp
+package shp
 
 import (
 	"encoding/binary"
@@ -15,13 +15,13 @@ import (
 type Reader struct {
 	GeometryType ShapeType
 
-	shp          *os.File
-	shape		Shape
-	filename     string
-	filelength   int64
+	shp        *os.File
+	shape      Shape
+	filename   string
+	filelength int64
 
 	dbf             *os.File
-	dbfFields          []Field
+	dbfFields       []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16

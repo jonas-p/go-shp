@@ -1,4 +1,4 @@
-package goshp
+package shp
 
 import (
 	"encoding/binary"
