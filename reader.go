@@ -17,6 +17,7 @@ type Reader struct {
 
 	shp        *os.File
 	shape      Shape
+	num	int32
 	filename   string
 	filelength int64
 
@@ -62,10 +63,12 @@ func (r *Reader) Close() {
 	}
 }
 
-// Shape returns the most recent Shape that was read by
-// a call to Next.
-func (r *Reader) Shape() (shape Shape) {
-	return r.shape
+// Shape returns the most recent feature that was read by
+// a call to Next. It returns two values, the int is the 
+// object index starting from zero in the shapefile which
+// can be used as row in ReadAttribute, and the Shape is the object.
+func (r *Reader) Shape() (int, Shape) {
+	return int(r.num)-1, r.shape
 }
 
 // Next reads in the next Shape in the Shapefile, which
@@ -79,9 +82,8 @@ func (r *Reader) Next() bool {
 	}
 
 	var size int32
-	var num int32
 	var shapetype ShapeType
-	binary.Read(r.shp, binary.BigEndian, &num)
+	binary.Read(r.shp, binary.BigEndian, &r.num)
 	binary.Read(r.shp, binary.BigEndian, &size)
 	binary.Read(r.shp, binary.LittleEndian, &shapetype)
 
@@ -165,7 +167,7 @@ func (r *Reader) AttributeCount() int {
 }
 
 // ReadAttribute returns the attribute value at row for field in
-// the DBF table as a string.
+// the DBF table as a string. Both values starts at 0.
 func (r *Reader) ReadAttribute(row int, field int) string {
 	r.openDbf() // make sure we have a dbf file to read from
 	seekTo := 1 + int64(r.dbfHeaderLength) + (int64(row) * int64(r.dbfRecordLength))
