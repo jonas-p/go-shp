@@ -16,9 +16,9 @@ func TestReadPoints(t *testing.T) {
 	}
 
 	n := 0
-	for !points.EOF() {
+	for points.Next() {
 		n += 1
-		shape, err := points.ReadShape()
+		shape := points.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}
@@ -51,9 +51,9 @@ func TestReadPolyLines(t *testing.T) {
 	}
 
 	n := 0
-	for !lines.EOF() {
+	for lines.Next() {
 		n += 1
-		shape, err := lines.ReadShape()
+		shape := lines.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}
@@ -97,9 +97,9 @@ func TestReadPolygons(t *testing.T) {
 	}
 
 	n := 0
-	for !polygons.EOF() {
+	for polygons.Next() {
 		n += 1
-		shape, err := polygons.ReadShape()
+		shape := polygons.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}

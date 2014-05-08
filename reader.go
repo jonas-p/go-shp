@@ -8,20 +8,26 @@ import (
 	"strings"
 )
 
+// Reader provides a interface for reading Shapefiles. Calls
+// to the Next method will iterate through the objects in the
+// Shapefile. After a call to Next the object will be available
+// through the Shape method.
 type Reader struct {
-	filename     string
-	shp          *os.File
-	filelength   int64
 	GeometryType ShapeType
 
-	Fields          []Field
+	shp          *os.File
+	shape		Shape
+	filename     string
+	filelength   int64
+
 	dbf             *os.File
+	dbfFields          []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
 }
 
-// Opens a Shapefile for reading.
+// Open opens a Shapefile for reading.
 func Open(filename string) (*Reader, error) {
 	filename = filename[0 : len(filename)-3]
 	shp, err := os.Open(filename + "shp")
@@ -30,7 +36,6 @@ func Open(filename string) (*Reader, error) {
 	}
 	s := &Reader{filename: filename, shp: shp}
 	s.readHeaders()
-	s.openDbf()
 	return s, nil
 }
 
@@ -49,17 +54,7 @@ func (r *Reader) readHeaders() {
 	r.shp.Seek(100, 0)
 }
 
-// Returns true if the file cursor has passed the end
-// of the file.
-func (r *Reader) EOF() (ok bool) {
-	n, _ := r.shp.Seek(0, os.SEEK_CUR)
-	if n >= r.filelength {
-		ok = true
-	}
-	return
-}
-
-// Closes the Shapefile
+// Close closes the Shapefile.
 func (r *Reader) Close() {
 	r.shp.Close()
 	if r.dbf != nil {
@@ -67,54 +62,66 @@ func (r *Reader) Close() {
 	}
 }
 
-// Read and returns the next shape in the Shapefile as
-// a Shape interface which can be type asserted to the
-// correct type.
-func (r *Reader) ReadShape() (shape Shape, err error) {
+// Shape returns the most recent Shape that was read by
+// a call to Next.
+func (r *Reader) Shape() (shape Shape) {
+	return r.shape
+}
+
+// Next reads in the next Shape in the Shapefile, which
+// will then be available through the Shape method. It
+// returns false when the reader has reached the end of the
+// file.
+func (r *Reader) Next() bool {
+	cur, _ := r.shp.Seek(0, os.SEEK_CUR)
+	if cur >= r.filelength {
+		return false
+	}
+
 	var size int32
 	var num int32
 	var shapetype ShapeType
 	binary.Read(r.shp, binary.BigEndian, &num)
 	binary.Read(r.shp, binary.BigEndian, &size)
-	cur, _ := r.shp.Seek(0, os.SEEK_CUR)
 	binary.Read(r.shp, binary.LittleEndian, &shapetype)
 
 	switch shapetype {
 	case NULL:
-		shape = new(Null)
+		r.shape = new(Null)
 	case POINT:
-		shape = new(Point)
+		r.shape = new(Point)
 	case POLYLINE:
-		shape = new(PolyLine)
+		r.shape = new(PolyLine)
 	case POLYGON:
-		shape = new(Polygon)
+		r.shape = new(Polygon)
 	case MULTIPOINT:
-		shape = new(MultiPoint)
+		r.shape = new(MultiPoint)
 	case POINTZ:
-		shape = new(PointZ)
+		r.shape = new(PointZ)
 	case POLYLINEZ:
-		shape = new(PolyLineZ)
+		r.shape = new(PolyLineZ)
 	case POLYGONZ:
-		shape = new(PolygonZ)
+		r.shape = new(PolygonZ)
 	case MULTIPOINTZ:
-		shape = new(MultiPointZ)
+		r.shape = new(MultiPointZ)
 	case POINTM:
-		shape = new(PointM)
+		r.shape = new(PointM)
 	case POLYLINEM:
-		shape = new(PolyLineM)
+		r.shape = new(PolyLineM)
 	case POLYGONM:
-		shape = new(PolygonM)
+		r.shape = new(PolygonM)
 	case MULTIPOINTM:
-		shape = new(MultiPointM)
+		r.shape = new(MultiPointM)
 	case MULTIPATCH:
-		shape = new(MultiPatch)
+		r.shape = new(MultiPatch)
 	default:
 		log.Fatal("Unsupported shape type:", shapetype)
 	}
-	shape.read(r.shp)
+	r.shape.read(r.shp)
 
-	_, err = r.shp.Seek(int64(size)*2+cur, 0)
-	return shape, err
+	// move to next object
+	r.shp.Seek(int64(size)*2+cur+8, 0)
+	return true
 }
 
 // Opens DBF file using r.filename + "dbf". This method
@@ -138,27 +145,35 @@ func (r *Reader) openDbf() (err error) {
 
 	r.dbf.Seek(20, os.SEEK_CUR) // skip padding
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
-	r.Fields = make([]Field, numFields)
-	binary.Read(r.dbf, binary.LittleEndian, &r.Fields)
+	r.dbfFields = make([]Field, numFields)
+	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
 
 	return
 }
 
-// Returns number of records in the DBF table
+// Fields returns a slice of Fields that are present in the
+// DBF table.
+func (r *Reader) Fields() []Field {
+	r.openDbf() // make sure we have dbf file to read from
+	return r.dbfFields
+}
+
+// AttributeCount returns number of records in the DBF table.
 func (r *Reader) AttributeCount() int {
 	r.openDbf() // make sure we have a dbf file to read from
 	return int(r.dbfNumRecords)
 }
 
-// Read attribute from DBF at row and field
+// ReadAttribute returns the attribute value at row for field in
+// the DBF table as a string.
 func (r *Reader) ReadAttribute(row int, field int) string {
 	r.openDbf() // make sure we have a dbf file to read from
 	seekTo := 1 + int64(r.dbfHeaderLength) + (int64(row) * int64(r.dbfRecordLength))
 	for n := 0; n < field; n++ {
-		seekTo += int64(r.Fields[n].Size)
+		seekTo += int64(r.dbfFields[n].Size)
 	}
 	r.dbf.Seek(seekTo, os.SEEK_SET)
-	buf := make([]byte, r.Fields[field].Size)
+	buf := make([]byte, r.dbfFields[field].Size)
 	r.dbf.Read(buf)
 	return strings.Trim(string(buf[:]), " ")
 }
