@@ -1,7 +1,7 @@
 go-shp
 ======
 
-Go library for reading and writing ESRI Shapefiles.
+Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI technical specifications of Shapefiles.
 
 ### Usage
 #### Installation
