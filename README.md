@@ -46,11 +46,11 @@ for shape.Next() {
 
 ```go
 // points to write
-points := []*shp.Point{
-	&shp.Point{10.0, 10.0},
-	&shp.Point{10.0, 15.0},
-	&shp.Point{15.0, 15.0},
-	&shp.Point{15.0, 10.0},
+points := []shp.Point{
+	shp.Point{10.0, 10.0},
+	shp.Point{10.0, 15.0},
+	shp.Point{15.0, 15.0},
+	shp.Point{15.0, 10.0},
 }
 	
 // fields to write
@@ -69,7 +69,7 @@ shape.SetFields(fields)
 	
 // write points and attributes
 for n, point := range points {
-	shape.Write(point)
+	shape.Write(&point)
 	
 	// write attribute for object n for field 0 (NAME)
 	shape.WriteAttribute(n, 0, "Point " + strconv.Itoa(n + 1))
