@@ -12,7 +12,7 @@ const (
 	POINT                 = 1
 	POLYLINE              = 3
 	POLYGON               = 5
-	MULTIPOINT            = 9
+	MULTIPOINT            = 8
 	POINTZ                = 11
 	POLYLINEZ             = 13
 	POLYGONZ              = 15
