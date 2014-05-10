@@ -50,8 +50,9 @@ func Create(filename string, t ShapeType) (*Writer, error) {
 
 // Write shape to the Shapefile. This also creates
 // a record in the SHX file and DBF file (if it is
-// initialized).
-func (w *Writer) Write(shape Shape) {
+// initialized). Returns the index of the written object
+// which can be used in WriteAttribute.
+func (w *Writer) Write(shape Shape) int32 {
 	// increate bbox
 	if w.num == 0 {
 		w.bbox = shape.BBox()
@@ -79,6 +80,8 @@ func (w *Writer) Write(shape Shape) {
 	if w.dbf != nil {
 		w.writeEmptyRecord()
 	}
+
+	return w.num - 1
 }
 
 // Closes the Shapefile. This must be used at the end of
