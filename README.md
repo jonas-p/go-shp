@@ -78,7 +78,7 @@ for n, point := range points {
 
 ### To do
 - Testing, currently only tests exist for reading shapefiles for type point, polyline and polygon.
-- Rewrite to remove duplicate code
+- Rewrite parts that include duplicate code.
 
 ### Resources
 
