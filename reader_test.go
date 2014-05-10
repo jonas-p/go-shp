@@ -144,7 +144,7 @@ func TestReadMultiPoints(t *testing.T) {
 	n := 0
 	var shape Shape
 	for multipoints.Next() {
-		n,shape = multipoints.Shape()
+		n, shape = multipoints.Shape()
 		mp, ok := shape.(*MultiPoint)
 		if ok != true {
 			t.Error("Failed to type assert shape to MultiPoint")

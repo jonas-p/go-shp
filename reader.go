@@ -17,7 +17,7 @@ type Reader struct {
 
 	shp        *os.File
 	shape      Shape
-	num	int32
+	num        int32
 	filename   string
 	filelength int64
 
@@ -64,11 +64,11 @@ func (r *Reader) Close() {
 }
 
 // Shape returns the most recent feature that was read by
-// a call to Next. It returns two values, the int is the 
+// a call to Next. It returns two values, the int is the
 // object index starting from zero in the shapefile which
 // can be used as row in ReadAttribute, and the Shape is the object.
 func (r *Reader) Shape() (int, Shape) {
-	return int(r.num)-1, r.shape
+	return int(r.num) - 1, r.shape
 }
 
 // Next reads in the next Shape in the Shapefile, which
