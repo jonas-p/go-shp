@@ -1,7 +1,7 @@
 go-shp
 ======
 
-Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI technical specifications of Shapefiles.
+Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI Shapefile technical description.
 
 ### Usage
 #### Installation
@@ -75,6 +75,10 @@ for n, point := range points {
 	shape.WriteAttribute(n, 0, "Point " + strconv.Itoa(n + 1))
 }
 ```
+
+### To do
+- Testing, currently only tests exist for reading shapefiles for type point, polyline and polygon.
+- Rewrite to remove duplicate code
 
 ### Resources
 
