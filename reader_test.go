@@ -18,7 +18,7 @@ func TestReadPoints(t *testing.T) {
 	n := 0
 	for points.Next() {
 		n += 1
-		shape := points.Shape()
+		_, shape := points.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}
@@ -53,7 +53,7 @@ func TestReadPolyLines(t *testing.T) {
 	n := 0
 	for lines.Next() {
 		n += 1
-		shape := lines.Shape()
+		_, shape := lines.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}
@@ -99,7 +99,7 @@ func TestReadPolygons(t *testing.T) {
 	n := 0
 	for polygons.Next() {
 		n += 1
-		shape := polygons.Shape()
+		_, shape := polygons.Shape()
 		if err != nil {
 			t.Error("Failed to read shape")
 		}
@@ -126,5 +126,36 @@ func TestReadPolygons(t *testing.T) {
 
 	if n != len(numParts) {
 		t.Error("Number of polygons read was not ", len(numParts))
+	}
+}
+
+func TestReadMultiPoints(t *testing.T) {
+	numPoints := []int32{5, 3}
+	multipoints, err := Open("test_files/multipoints.shp")
+	if err != nil {
+		t.Fatal("Failed to open multipoints.shp: " + err.Error())
+	}
+	defer multipoints.Close()
+
+	if multipoints.GeometryType != MULTIPOINT {
+		t.Error("File was not Polygon type")
+	}
+
+	n := 0
+	var shape Shape
+	for multipoints.Next() {
+		n,shape = multipoints.Shape()
+		mp, ok := shape.(*MultiPoint)
+		if ok != true {
+			t.Error("Failed to type assert shape to MultiPoint")
+		}
+
+		if mp.NumPoints != numPoints[n] {
+			t.Error("NumPoints mismatch")
+		}
+	}
+
+	if n != 1 {
+		t.Error("Number of MultiPoints read was not 2")
 	}
 }
