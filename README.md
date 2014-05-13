@@ -77,7 +77,7 @@ for n, point := range points {
 ```
 
 ### To do
-- Testing, currently only tests exist for reading shapefiles for type point, polyline and polygon, multipoint, pointz, polylinez, polygonz and multipointz.
+- Testing, currently missing tests for writing shapefiles and reading/writing attributes.
 - Rewrite parts that include duplicate code.
 
 ### Resources
