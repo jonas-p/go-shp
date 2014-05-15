@@ -122,6 +122,21 @@ func (p *Point) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p)
 }
 
+func flatten(points [][]Point) []Point {
+	n, i := 0, 0
+	for _, v := range points {
+		n += len(v)
+	}
+	r := make([]Point, n)
+	for _, v := range points {
+		for _, p := range v {
+			r[i] = p
+			i += 1
+		}
+	}
+	return r
+}
+
 // Shapefile PolyLine type
 type PolyLine struct {
 	Box
@@ -134,23 +149,16 @@ type PolyLine struct {
 // NewPolyLine returns a pointer a new PolyLine created
 // with the provided points. The inner slice should be
 // the points that the parent part consists of.
-func NewPolyLine(points [][]Point) *PolyLine {
+func NewPolyLine(parts [][]Point) *PolyLine {
+	points := flatten(parts)
+
 	p := &PolyLine{}
-	p.NumParts = int32(len(points))
-	p.Parts = make([]int32, len(points))
-	for k, part := range points {
-		p.Parts[k] = p.NumPoints
-		p.NumPoints += int32(len(part))
-	}
-	p.Points = make([]Point, p.NumPoints)
-	n := 0
-	for _, part := range points {
-		for _, point := range part {
-			p.Box.ExtendWithPoint(point)
-			p.Points[n] = point
-			n += 1
-		}
-	}
+	p.NumParts = int32(len(parts))
+	p.NumPoints = int32(len(points))
+	p.Parts = make([]int32, len(parts))
+	p.Points = points
+	p.Box = p.BBox()
+
 	return p
 }
 
