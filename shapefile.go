@@ -30,19 +30,28 @@ type Box struct {
 	MinX, MinY, MaxX, MaxY float64
 }
 
-// Extends Box with coordinates from box
+// Extend extends the box with coordinates from the provided
+// box. This method calls Box.ExtendWithPoint twice with
+// {MinX, MinY} and {MaxX, MaxY}
 func (b *Box) Extend(box Box) {
-	if box.MinX < b.MinX {
-		b.MinX = box.MinX
+	b.ExtendWithPoint(Point{box.MinX, box.MinY})
+	b.ExtendWithPoint(Point{box.MaxX, box.MaxX})
+}
+
+// ExtendWithPoint extends box with coordinates from point
+// if they are outside the range of the current box.
+func (b *Box) ExtendWithPoint(p Point) {
+	if p.X < b.MinX {
+		b.MinX = p.X
 	}
-	if box.MinY < b.MinY {
-		b.MinY = box.MinY
+	if p.Y < b.MinY {
+		b.MinY = p.Y
 	}
-	if box.MaxX > b.MaxX {
-		b.MaxX = box.MaxX
+	if p.X > b.MaxX {
+		b.MaxX = p.X
 	}
-	if box.MaxY > b.MaxY {
-		b.MaxY = box.MaxY
+	if p.Y > b.MaxY {
+		b.MaxY = p.Y
 	}
 }
 
@@ -120,6 +129,29 @@ type PolyLine struct {
 	NumPoints int32
 	Parts     []int32
 	Points    []Point
+}
+
+// NewPolyLine returns a pointer a new PolyLine created
+// with the provided points. The inner slice should be
+// the points that the parent part consists of.
+func NewPolyLine(points [][]Point) *PolyLine {
+	p := &PolyLine{}
+	p.NumParts = int32(len(points))
+	p.Parts = make([]int32, len(points))
+	for k, part := range points {
+		p.Parts[k] = p.NumPoints
+		p.NumPoints += int32(len(part))
+	}
+	p.Points = make([]Point, p.NumPoints)
+	n := 0
+	for _, part := range points {
+		for _, point := range part {
+			p.Box.ExtendWithPoint(point)
+			p.Points[n] = point
+			n += 1
+		}
+	}
+	return p
 }
 
 // Returns the bounding box of the PolyLine feature
