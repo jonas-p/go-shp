@@ -1,8 +1,6 @@
 package shp
 
-import (
-	"testing"
-)
+import "testing"
 
 func pointsEqual(a, b []float64) bool {
 	if len(a) != len(b) {
@@ -255,6 +253,45 @@ func test_MultiPatch(t *testing.T, filename string, points [][]float64, shapes_n
 			if !pointsEqual(points[n*3+k], []float64{point.X, point.Y, p.ZArray[k]}) {
 				t.Error("Points did not match.")
 			}
+		}
+	}
+}
+
+func TestReadBBox(t *testing.T) {
+	tests := []struct {
+		filename string
+		want     Box
+	}{
+		{"test_files/multipatch.shp", Box{0, 0, 10, 10}},
+		{"test_files/multipoint.shp", Box{0, 5, 10, 10}},
+		{"test_files/multipointm.shp", Box{0, 5, 10, 10}},
+		{"test_files/multipointz.shp", Box{0, 5, 10, 10}},
+		{"test_files/point.shp", Box{0, 5, 10, 10}},
+		{"test_files/pointm.shp", Box{0, 5, 10, 10}},
+		{"test_files/pointz.shp", Box{0, 5, 10, 10}},
+		{"test_files/polygon.shp", Box{0, 0, 5, 5}},
+		{"test_files/polygonm.shp", Box{0, 0, 5, 5}},
+		{"test_files/polygonz.shp", Box{0, 0, 5, 5}},
+		{"test_files/polyline.shp", Box{0, 0, 25, 25}},
+		{"test_files/polylinem.shp", Box{0, 0, 25, 25}},
+		{"test_files/polylinez.shp", Box{0, 0, 25, 25}},
+	}
+	for _, tt := range tests {
+		r, err := Open(tt.filename)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if got := r.BBox().MinX; got != tt.want.MinX {
+			t.Errorf("got MinX = %v, want %v", got, tt.want.MinX)
+		}
+		if got := r.BBox().MinY; got != tt.want.MinY {
+			t.Errorf("got MinY = %v, want %v", got, tt.want.MinY)
+		}
+		if got := r.BBox().MaxX; got != tt.want.MaxX {
+			t.Errorf("got MaxX = %v, want %v", got, tt.want.MaxX)
+		}
+		if got := r.BBox().MaxY; got != tt.want.MaxY {
+			t.Errorf("got MaxY = %v, want %v", got, tt.want.MaxY)
 		}
 	}
 }

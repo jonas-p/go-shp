@@ -14,6 +14,7 @@ import (
 // through the Shape method.
 type Reader struct {
 	GeometryType ShapeType
+	bbox         Box
 
 	shp        *os.File
 	shape      Shape
@@ -40,8 +41,12 @@ func Open(filename string) (*Reader, error) {
 	return s, nil
 }
 
+func (r *Reader) BBox() Box {
+	return r.bbox
+}
+
 // Read and parse headers in the Shapefile. This will
-// fill out GeometryType and filelength.
+// fill out GeometryType, filelength and bbox.
 func (r *Reader) readHeaders() {
 	// don't trust the the filelength in the header
 	r.filelength, _ = r.shp.Seek(0, os.SEEK_END)
@@ -52,7 +57,17 @@ func (r *Reader) readHeaders() {
 	binary.Read(r.shp, binary.BigEndian, &filelength)
 	r.shp.Seek(32, 0)
 	binary.Read(r.shp, binary.LittleEndian, &r.GeometryType)
+	r.bbox.MinX = r.readFloat64()
+	r.bbox.MinY = r.readFloat64()
+	r.bbox.MaxX = r.readFloat64()
+	r.bbox.MaxY = r.readFloat64()
 	r.shp.Seek(100, 0)
+}
+
+func (r *Reader) readFloat64() float64 {
+	var bits uint64
+	binary.Read(r.shp, binary.LittleEndian, &bits)
+	return math.Float64frombits(bits)
 }
 
 // Close closes the Shapefile.
