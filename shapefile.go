@@ -35,7 +35,7 @@ type Box struct {
 // {MinX, MinY} and {MaxX, MaxY}
 func (b *Box) Extend(box Box) {
 	b.ExtendWithPoint(Point{box.MinX, box.MinY})
-	b.ExtendWithPoint(Point{box.MaxX, box.MaxX})
+	b.ExtendWithPoint(Point{box.MaxX, box.MaxY})
 }
 
 // ExtendWithPoint extends box with coordinates from point
