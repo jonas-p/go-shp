@@ -76,10 +76,6 @@ for n, point := range points {
 }
 ```
 
-### To do
-- Testing, currently missing tests for writing shapefiles and reading/writing attributes.
-- Rewrite parts that include duplicate code.
-
 ### Resources
 
 - [Documentation on godoc.org](http://godoc.org/github.com/jonas-p/go-shp)
