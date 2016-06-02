@@ -296,161 +296,177 @@ func TestReadBBox(t *testing.T) {
 	}
 }
 
-func TestReadPoint(t *testing.T) {
-	points := [][]float64{
+var dataForReadTests = map[string][][]float64{
+	"test_files/polygonm": [][]float64{
+		{0, 0, 0},
+		{0, 5, 5},
+		{5, 5, 10},
+		{5, 0, 15},
+		{0, 0, 0},
+	},
+	"test_files/multipointm": [][]float64{
+		{10, 10, 100},
+		{5, 5, 50},
+		{0, 10, 75},
+	},
+	"test_files/multipatch": [][]float64{
+		{0, 0, 0},
+		{10, 0, 0},
+		{10, 10, 0},
+		{0, 10, 0},
+		{0, 0, 0},
+		{0, 10, 0},
+		{0, 10, 10},
+		{0, 0, 10},
+		{0, 0, 0},
+		{0, 10, 0},
+		{10, 0, 0},
+		{10, 0, 10},
+		{10, 10, 10},
+		{10, 10, 0},
+		{10, 0, 0},
+		{0, 0, 0},
+		{0, 0, 10},
+		{10, 0, 10},
+		{10, 0, 0},
+		{0, 0, 0},
+		{10, 10, 0},
+		{10, 10, 10},
+		{0, 10, 10},
+		{0, 10, 0},
+		{10, 10, 0},
+		{0, 0, 10},
+		{0, 10, 10},
+		{10, 10, 10},
+		{10, 0, 10},
+		{0, 0, 10},
+	},
+	"test_files/point": [][]float64{
 		{10, 10},
 		{5, 5},
 		{0, 10},
-	}
-	test_Point(t, "test_files/point.shp", points, 3)
-}
-
-func TestReadPolyLine(t *testing.T) {
-	points := [][]float64{
+	},
+	"test_files/polyline": [][]float64{
 		{0, 0},
 		{5, 5},
 		{10, 10},
 		{15, 15},
 		{20, 20},
 		{25, 25},
-	}
-	test_PolyLine(t, "test_files/polyline.shp", points, 2)
-}
-
-func TestReadPolygon(t *testing.T) {
-	points := [][]float64{
+	},
+	"test_files/polygon": [][]float64{
 		{0, 0},
 		{0, 5},
 		{5, 5},
 		{5, 0},
 		{0, 0},
-	}
-	test_Polygon(t, "test_files/polygon.shp", points, 1)
-}
-
-func TestReadMultiPoint(t *testing.T) {
-	points := [][]float64{
+	},
+	"test_files/multipoint": [][]float64{
 		{10, 10},
 		{5, 5},
 		{0, 10},
-	}
-	test_MultiPoint(t, "test_files/multipoint.shp", points, 1)
+	},
+	"test_files/pointz": [][]float64{
+		{10, 10, 100},
+		{5, 5, 50},
+		{0, 10, 75},
+	},
+	"test_files/polylinez": [][]float64{
+		{0, 0, 0},
+		{5, 5, 5},
+		{10, 10, 10},
+		{15, 15, 15},
+		{20, 20, 20},
+		{25, 25, 25},
+	},
+	"test_files/polygonz": [][]float64{
+		{0, 0, 0},
+		{0, 5, 5},
+		{5, 5, 10},
+		{5, 0, 15},
+		{0, 0, 0},
+	},
+	"test_files/multipointz": [][]float64{
+		{10, 10, 100},
+		{5, 5, 50},
+		{0, 10, 75},
+	},
+	"test_files/pointm": [][]float64{
+		{10, 10, 100},
+		{5, 5, 50},
+		{0, 10, 75},
+	},
+	"test_files/polylinem": [][]float64{
+		{0, 0, 0},
+		{5, 5, 5},
+		{10, 10, 10},
+		{15, 15, 15},
+		{20, 20, 20},
+		{25, 25, 25},
+	},
+}
+
+func TestReadPoint(t *testing.T) {
+	prefix := "test_files/point"
+	test_Point(t, prefix+".shp", dataForReadTests[prefix], 3)
+}
+
+func TestReadPolyLine(t *testing.T) {
+	prefix := "test_files/polyline"
+	test_PolyLine(t, prefix+".shp", dataForReadTests[prefix], 2)
+}
+
+func TestReadPolygon(t *testing.T) {
+	prefix := "test_files/polygon"
+	test_Polygon(t, prefix+".shp", dataForReadTests[prefix], 1)
+}
+
+func TestReadMultiPoint(t *testing.T) {
+	prefix := "test_files/multipoint"
+	test_MultiPoint(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
 
 func TestReadPointZ(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_PointZ(t, "test_files/pointz.shp", points, 3)
+	prefix := "test_files/pointz"
+	test_PointZ(t, prefix+".shp", dataForReadTests[prefix], 3)
 }
 
 func TestReadPolyLineZ(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{5, 5, 5},
-		{10, 10, 10},
-		{15, 15, 15},
-		{20, 20, 20},
-		{25, 25, 25},
-	}
-	test_PolyLineZ(t, "test_files/polylinez.shp", points, 2)
+	prefix := "test_files/polylinez"
+	test_PolyLineZ(t, prefix+".shp", dataForReadTests[prefix], 2)
 }
 
 func TestReadPolygonZ(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{0, 5, 5},
-		{5, 5, 10},
-		{5, 0, 15},
-		{0, 0, 0},
-	}
-	test_PolygonZ(t, "test_files/polygonz.shp", points, 1)
+	prefix := "test_files/polygonz"
+	test_PolygonZ(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
 
 func TestReadMultiPointZ(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_MultiPointZ(t, "test_files/multipointz.shp", points, 1)
+	prefix := "test_files/multipointz"
+	test_MultiPointZ(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
 
 func TestReadPointM(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_PointM(t, "test_files/pointm.shp", points, 3)
+	prefix := "test_files/pointm"
+	test_PointM(t, prefix+".shp", dataForReadTests[prefix], 3)
 }
 
 func TestReadPolyLineM(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{5, 5, 5},
-		{10, 10, 10},
-		{15, 15, 15},
-		{20, 20, 20},
-		{25, 25, 25},
-	}
-	test_PolyLineM(t, "test_files/polylinem.shp", points, 2)
+	prefix := "test_files/polylinem"
+	test_PolyLineM(t, prefix+".shp", dataForReadTests[prefix], 2)
 }
 
 func TestReadPolygonM(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{0, 5, 5},
-		{5, 5, 10},
-		{5, 0, 15},
-		{0, 0, 0},
-	}
-	test_PolygonM(t, "test_files/polygonm.shp", points, 1)
+	prefix := "test_files/polygonm"
+	test_PolygonM(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
 
 func TestReadMultiPointM(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_MultiPointM(t, "test_files/multipointm.shp", points, 1)
+	prefix := "test_files/multipointm"
+	test_MultiPointM(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
 
 func TestReadMultipatch(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{10, 0, 0},
-		{10, 10, 0},
-		{0, 10, 0},
-		{0, 0, 0},
-		{0, 10, 0},
-		{0, 10, 10},
-		{0, 0, 10},
-		{0, 0, 0},
-		{0, 10, 0},
-		{10, 0, 0},
-		{10, 0, 10},
-		{10, 10, 10},
-		{10, 10, 0},
-		{10, 0, 0},
-		{0, 0, 0},
-		{0, 0, 10},
-		{10, 0, 10},
-		{10, 0, 0},
-		{0, 0, 0},
-		{10, 10, 0},
-		{10, 10, 10},
-		{0, 10, 10},
-		{0, 10, 0},
-		{10, 10, 0},
-		{0, 0, 10},
-		{0, 10, 10},
-		{10, 10, 10},
-		{10, 0, 10},
-		{0, 0, 10},
-	}
-	test_MultiPatch(t, "test_files/multipatch.shp", points, 1)
+	prefix := "test_files/multipatch"
+	test_MultiPatch(t, prefix+".shp", dataForReadTests[prefix], 1)
 }
