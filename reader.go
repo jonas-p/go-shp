@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -57,16 +58,16 @@ func (r *Reader) readHeaders() {
 	binary.Read(r.shp, binary.BigEndian, &filelength)
 	r.shp.Seek(32, 0)
 	binary.Read(r.shp, binary.LittleEndian, &r.GeometryType)
-	r.bbox.MinX = r.readFloat64()
-	r.bbox.MinY = r.readFloat64()
-	r.bbox.MaxX = r.readFloat64()
-	r.bbox.MaxY = r.readFloat64()
+	r.bbox.MinX = readFloat64(r.shp)
+	r.bbox.MinY = readFloat64(r.shp)
+	r.bbox.MaxX = readFloat64(r.shp)
+	r.bbox.MaxY = readFloat64(r.shp)
 	r.shp.Seek(100, 0)
 }
 
-func (r *Reader) readFloat64() float64 {
+func readFloat64(r io.Reader) float64 {
 	var bits uint64
-	binary.Read(r.shp, binary.LittleEndian, &bits)
+	binary.Read(r, binary.LittleEndian, &bits)
 	return math.Float64frombits(bits)
 }
 
