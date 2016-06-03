@@ -163,10 +163,9 @@ func (sr *seqReader) Close() error {
 	return sr.err
 }
 
-// Fields returns a slice of the Fields that are present in the DBF table.
+// Fields returns a slice of the fields that are present in the DBF table.
 func (sr *seqReader) Fields() []Field {
-	// TODO implement
-	return nil
+	return sr.dbfFields
 }
 
 // SequentialReaderFromExt returns a new SequentialReader that interprets shp
