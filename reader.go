@@ -71,11 +71,12 @@ func (r *Reader) readFloat64() float64 {
 }
 
 // Close closes the Shapefile.
-func (r *Reader) Close() {
-	r.shp.Close()
+func (r *Reader) Close() error {
+	err := r.shp.Close()
 	if r.dbf != nil {
 		r.dbf.Close()
 	}
+	return err
 }
 
 // Shape returns the most recent feature that was read by
