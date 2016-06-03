@@ -16,6 +16,7 @@ import (
 type Reader struct {
 	GeometryType ShapeType
 	bbox         Box
+	err          error
 
 	shp        *os.File
 	shape      Shape
@@ -73,11 +74,13 @@ func readFloat64(r io.Reader) float64 {
 
 // Close closes the Shapefile.
 func (r *Reader) Close() error {
-	err := r.shp.Close()
-	if r.dbf != nil {
-		r.dbf.Close()
+	if r.err == nil {
+		r.err = r.shp.Close()
+		if r.dbf != nil {
+			r.dbf.Close()
+		}
 	}
-	return err
+	return r.err
 }
 
 // Shape returns the most recent feature that was read by
@@ -181,6 +184,14 @@ func (r *Reader) openDbf() (err error) {
 func (r *Reader) Fields() []Field {
 	r.openDbf() // make sure we have dbf file to read from
 	return r.dbfFields
+}
+
+// Err returns the last non-EOF error encountered.
+func (r *Reader) Err() error {
+	if r.err == io.EOF {
+		return nil
+	}
+	return r.err
 }
 
 // AttributeCount returns number of records in the DBF table.
