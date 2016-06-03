@@ -88,6 +88,12 @@ func (r *Reader) Shape() (int, Shape) {
 	return int(r.num) - 1, r.shape
 }
 
+// Attribute returns value of the n-th attribute of the most recent feature
+// that was read by a call to Next.
+func (r *Reader) Attribute(n int) string {
+	return r.ReadAttribute(int(r.num)-1, n)
+}
+
 // Next reads in the next Shape in the Shapefile, which
 // will then be available through the Shape method. It
 // returns false when the reader has reached the end of the
