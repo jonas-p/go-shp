@@ -8,6 +8,7 @@ import "io"
 type errReader struct {
 	io.Reader
 	e error
+	n int64
 }
 
 func (er *errReader) Read(p []byte) (n int, err error) {
@@ -15,5 +16,6 @@ func (er *errReader) Read(p []byte) (n int, err error) {
 		return 0, er.e
 	}
 	n, er.e = er.Reader.Read(p)
+	er.n += int64(n)
 	return n, er.e
 }

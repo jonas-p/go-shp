@@ -118,14 +118,30 @@ func (sr *seqReader) Next() bool {
 	if sr.err != nil {
 		return false
 	}
-	sr.err = fmt.Errorf("Not implemented yet")
-	// TODO implement this
-	return false
+	var num, size int32
+	var shapetype ShapeType
+
+	// read shape
+	er := &errReader{Reader: sr.shp}
+	binary.Read(er, binary.BigEndian, &num)
+	binary.Read(er, binary.BigEndian, &size)
+	binary.Read(er, binary.LittleEndian, &shapetype)
+
+	if er.e != nil {
+		sr.err = fmt.Errorf("Error when reading shapefile header: %v", er.e)
+		return false
+	}
+	sr.num = num
+	sr.shape = newShape(shapetype)
+	sr.shape.read(er)
+	skipBytes := int64(size)*2 + 8 - er.n
+	io.CopyN(ioutil.Discard, er, skipBytes)
+	return er.e == nil
 }
 
 // Shape implements a method of interface SequentialReader for seqReader.
 func (sr *seqReader) Shape() (int, Shape) {
-	panic("not implemented")
+	return int(sr.num) - 1, sr.shape
 }
 
 // Attribute implements a method of interface SequentialReader for seqReader.
