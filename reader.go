@@ -97,6 +97,43 @@ func (r *Reader) Attribute(n int) string {
 	return r.ReadAttribute(int(r.num)-1, n)
 }
 
+// newShape creates a new shape with a given type.
+func newShape(shapetype ShapeType) Shape {
+	switch shapetype {
+	case NULL:
+		return new(Null)
+	case POINT:
+		return new(Point)
+	case POLYLINE:
+		return new(PolyLine)
+	case POLYGON:
+		return new(Polygon)
+	case MULTIPOINT:
+		return new(MultiPoint)
+	case POINTZ:
+		return new(PointZ)
+	case POLYLINEZ:
+		return new(PolyLineZ)
+	case POLYGONZ:
+		return new(PolygonZ)
+	case MULTIPOINTZ:
+		return new(MultiPointZ)
+	case POINTM:
+		return new(PointM)
+	case POLYLINEM:
+		return new(PolyLineM)
+	case POLYGONM:
+		return new(PolygonM)
+	case MULTIPOINTM:
+		return new(MultiPointM)
+	case MULTIPATCH:
+		return new(MultiPatch)
+	default:
+		log.Fatal("Unsupported shape type:", shapetype)
+		return nil
+	}
+}
+
 // Next reads in the next Shape in the Shapefile, which
 // will then be available through the Shape method. It
 // returns false when the reader has reached the end of the
@@ -113,38 +150,7 @@ func (r *Reader) Next() bool {
 	binary.Read(r.shp, binary.BigEndian, &size)
 	binary.Read(r.shp, binary.LittleEndian, &shapetype)
 
-	switch shapetype {
-	case NULL:
-		r.shape = new(Null)
-	case POINT:
-		r.shape = new(Point)
-	case POLYLINE:
-		r.shape = new(PolyLine)
-	case POLYGON:
-		r.shape = new(Polygon)
-	case MULTIPOINT:
-		r.shape = new(MultiPoint)
-	case POINTZ:
-		r.shape = new(PointZ)
-	case POLYLINEZ:
-		r.shape = new(PolyLineZ)
-	case POLYGONZ:
-		r.shape = new(PolygonZ)
-	case MULTIPOINTZ:
-		r.shape = new(MultiPointZ)
-	case POINTM:
-		r.shape = new(PointM)
-	case POLYLINEM:
-		r.shape = new(PolyLineM)
-	case POLYGONM:
-		r.shape = new(PolygonM)
-	case MULTIPOINTM:
-		r.shape = new(MultiPointM)
-	case MULTIPATCH:
-		r.shape = new(MultiPatch)
-	default:
-		log.Fatal("Unsupported shape type:", shapetype)
-	}
+	r.shape = newShape(shapetype)
 	r.shape.read(r.shp)
 
 	// move to next object
