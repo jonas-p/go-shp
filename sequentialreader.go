@@ -55,8 +55,8 @@ func AttributeCount(sr SequentialReader) int {
 // seqReader implements SequentialReader based on external io.ReadCloser
 // instances
 type seqReader struct {
-	shp, shx, dbf io.ReadCloser
-	err           error
+	shp, dbf io.ReadCloser
+	err      error
 
 	geometryType ShapeType
 	bbox         Box
@@ -154,9 +154,6 @@ func (sr *seqReader) Close() error {
 	if err := sr.shp.Close(); err != nil {
 		s += err.Error() + ". "
 	}
-	if err := sr.shx.Close(); err != nil {
-		s += err.Error() + ". "
-	}
 	if err := sr.dbf.Close(); err != nil {
 		s += err.Error() + ". "
 	}
@@ -173,10 +170,9 @@ func (sr *seqReader) Fields() []Field {
 }
 
 // SequentialReaderFromExt returns a new SequentialReader that interprets shp
-// as a source of shapes that are indexed in shx and whose attributes can be
-// retrieved from dbf.
-func SequentialReaderFromExt(shp, shx, dbf io.ReadCloser) SequentialReader {
-	sr := &seqReader{shp: shp, shx: shx, dbf: dbf}
+// as a source of shapes whose attributes can be retrieved from dbf.
+func SequentialReaderFromExt(shp, dbf io.ReadCloser) SequentialReader {
+	sr := &seqReader{shp: shp, dbf: dbf}
 	sr.readHeaders()
 	return sr
 }

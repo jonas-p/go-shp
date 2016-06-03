@@ -15,10 +15,9 @@ func openFile(name string, t *testing.T) *os.File {
 
 func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 	shp := openFile(prefix+".shp", t)
-	shx := openFile(prefix+".shx", t)
 	dbf := openFile(prefix+".dbf", t)
 
-	sr := SequentialReaderFromExt(shp, shx, dbf)
+	sr := SequentialReaderFromExt(shp, dbf)
 	for sr.Next() {
 		_, shape := sr.Shape()
 		shapes = append(shapes, shape)

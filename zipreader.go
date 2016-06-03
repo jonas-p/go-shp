@@ -27,8 +27,8 @@ func openFromZIP(z *zip.ReadCloser, name string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("No such file in archive: %s", name)
 }
 
-// OpenZip opens a ZIP file that contains a shapefile. The basename of the
-// SHP, SHX, DBF file in the ZIP must be the same as the basename of the ZIP
+// OpenZip opens a ZIP file that contains a shapefile. The path of the
+// SHP and DBF file in the ZIP must be the same as the basename of the ZIP
 // itself.
 func OpenZip(zipFilePath string) (*ZipReader, error) {
 	z, err := zip.OpenReader(zipFilePath)
@@ -44,13 +44,9 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	shx, err := openFromZIP(zr.z, zr.prefix+".shx")
-	if err != nil {
-		return nil, err
-	}
 	// dbf is optional, so no error checking here
 	dbf, _ := openFromZIP(zr.z, zr.prefix+".dbf")
-	zr.sr = SequentialReaderFromExt(shp, shx, dbf)
+	zr.sr = SequentialReaderFromExt(shp, dbf)
 	return zr, nil
 }
 
