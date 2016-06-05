@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -35,9 +35,9 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := path.Base(zipFilePath)
+	b := filepath.Base(zipFilePath)
 	zr := &ZipReader{
-		prefix: strings.TrimSuffix(b, path.Ext(b)),
+		prefix: strings.TrimSuffix(b, filepath.Ext(b)),
 		z:      z,
 	}
 	shp, err := openFromZIP(zr.z, zr.prefix+".shp")
@@ -50,7 +50,7 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	return zr, nil
 }
 
-// Close closes the the ZipReader and frees the allocated resources.
+// Close closes the ZipReader and frees the allocated resources.
 func (zr *ZipReader) Close() error {
 	s := ""
 	err := zr.sr.Close()
