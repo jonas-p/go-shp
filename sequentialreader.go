@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"strings"
 )
 
 // SequentialReader is the interface that allows reading shapes and attributes one after another. It also embeds io.Closer.
@@ -69,6 +70,7 @@ type seqReader struct {
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
+	dbfRow          []byte
 }
 
 // Read and parse headers in the Shapefile. This will fill out GeometryType,
@@ -107,10 +109,11 @@ func (sr *seqReader) readHeaders() {
 	io.CopyN(ioutil.Discard, er, 4) // skip padding
 	numFields := int(math.Floor(float64(sr.dbfHeaderLength-33) / 32.0))
 	sr.dbfFields = make([]Field, numFields)
-	binary.Read(sr.dbf, binary.LittleEndian, &sr.dbfFields)
+	binary.Read(er, binary.LittleEndian, &sr.dbfFields)
 	if er.e != nil {
 		sr.err = fmt.Errorf("Error when reading SHP header: %v", er.e)
 	}
+	sr.dbfRow = make([]byte, sr.dbfRecordLength)
 }
 
 // Next implements a method of interface SequentialReader for seqReader.
@@ -128,7 +131,11 @@ func (sr *seqReader) Next() bool {
 	binary.Read(er, binary.LittleEndian, &shapetype)
 
 	if er.e != nil {
-		sr.err = fmt.Errorf("Error when reading shapefile header: %v", er.e)
+		if er.e != io.EOF {
+			sr.err = fmt.Errorf("Error when reading shapefile header: %v", er.e)
+		} else {
+			sr.err = io.EOF
+		}
 		return false
 	}
 	sr.num = num
@@ -136,7 +143,14 @@ func (sr *seqReader) Next() bool {
 	sr.shape.read(er)
 	skipBytes := int64(size)*2 + 8 - er.n
 	io.CopyN(ioutil.Discard, er, skipBytes)
-	return er.e == nil
+	if er.e != nil {
+		sr.err = er.e
+		return false
+	}
+	if _, err := sr.dbf.Read(sr.dbfRow); err != nil {
+		sr.err = err
+	}
+	return sr.err == nil
 }
 
 // Shape implements a method of interface SequentialReader for seqReader.
@@ -149,8 +163,13 @@ func (sr *seqReader) Attribute(n int) string {
 	if sr.err != nil {
 		return ""
 	}
-	panic("not implemented")
-	// TODO implement this
+	start := 0
+	f := 0
+	for ; f < n; f++ {
+		start += int(sr.dbfFields[f].Size)
+	}
+	s := string(sr.dbfRow[start : start+int(sr.dbfFields[f].Size)])
+	return strings.Trim(s, " ")
 }
 
 // Err returns the first non-EOF error that was encountered.
@@ -163,20 +182,13 @@ func (sr *seqReader) Err() error {
 
 // Close closes the seqReader and free all the allocated resources.
 func (sr *seqReader) Close() error {
-	var s string
-	if sr.err != nil {
-		s = sr.err.Error() + ". "
-	}
 	if err := sr.shp.Close(); err != nil {
-		s += err.Error() + ". "
+		return err
 	}
 	if err := sr.dbf.Close(); err != nil {
-		s += err.Error() + ". "
+		return err
 	}
-	if s != "" {
-		sr.err = fmt.Errorf(s)
-	}
-	return sr.err
+	return nil
 }
 
 // Fields returns a slice of the fields that are present in the DBF table.
