@@ -26,11 +26,11 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 		shapes = append(shapes, shape)
 	}
 	if err := sr.Err(); err != nil {
-		t.Fatalf("Error when iterating over the shapes: %v", err)
+		t.Errorf("Error when iterating over the shapes: %v", err)
 	}
 
 	if err := sr.Close(); err != nil {
-		t.Fatalf("Could not close sequential reader: %v", err)
+		t.Error("Could not close sequential reader: %v", err)
 	}
 	return shapes
 }

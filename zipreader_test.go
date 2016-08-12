@@ -52,18 +52,18 @@ func getShapesZipped(prefix string, t *testing.T) (shapes []Shape) {
 	defer os.RemoveAll(dir)
 	zr, err := OpenZip(filepath.Join(dir, filename))
 	if err != nil {
-		t.Fatalf("Error when opening zip file: %v", err)
+		t.Errorf("Error when opening zip file: %v", err)
 	}
 	for zr.Next() {
 		_, shape := zr.Shape()
 		shapes = append(shapes, shape)
 	}
 	if err := zr.Err(); err != nil {
-		t.Fatalf("Error when iterating over the shapes: %v", err)
+		t.Errorf("Error when iterating over the shapes: %v", err)
 	}
 
 	if err := zr.Close(); err != nil {
-		t.Fatalf("Could not close zipreader: %v", err)
+		t.Errorf("Could not close zipreader: %v", err)
 	}
 	return shapes
 }
