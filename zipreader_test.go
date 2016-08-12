@@ -74,3 +74,17 @@ func TestZipReader(t *testing.T) {
 		test_shapeIdentity(t, prefix, getShapesZipped)
 	}
 }
+
+func TestNaturalEarthZip(t *testing.T) {
+	zr, err := OpenZip("ne_110m_admin_0_countries.zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zr.Close()
+	t.Log(len(zr.Fields()))
+	for zr.Next() {
+	}
+	if zr.Err() != nil {
+		t.Fatal(zr.Err())
+	}
+}
