@@ -84,7 +84,7 @@ func (sr *seqReader) readHeaders() {
 	io.CopyN(ioutil.Discard, er, 24)
 	var l int32
 	binary.Read(er, binary.BigEndian, &l)
-	sr.filelength = int64(l)
+	sr.filelength = int64(l) * 2
 	io.CopyN(ioutil.Discard, er, 4)
 	binary.Read(er, binary.LittleEndian, &sr.geometryType)
 	sr.bbox.MinX = readFloat64(er)
