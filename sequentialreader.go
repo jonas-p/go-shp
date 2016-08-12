@@ -141,14 +141,22 @@ func (sr *seqReader) Next() bool {
 	sr.num = num
 	sr.shape = newShape(shapetype)
 	sr.shape.read(er)
+	if er.e != nil {
+		sr.err = fmt.Errorf("Error while reading next shape: %v", er.e)
+		return false
+	}
 	skipBytes := int64(size)*2 + 8 - er.n
-	io.CopyN(ioutil.Discard, er, skipBytes)
+	_, ce := io.CopyN(ioutil.Discard, er, skipBytes)
 	if er.e != nil {
 		sr.err = er.e
 		return false
 	}
+	if ce != nil {
+		sr.err = fmt.Errorf("Error when discarding bytes on sequential read: %v", ce)
+		return false
+	}
 	if _, err := sr.dbf.Read(sr.dbfRow); err != nil {
-		sr.err = err
+		sr.err = fmt.Errorf("Error when reading DBF row: %v", err)
 	}
 	return sr.err == nil
 }
