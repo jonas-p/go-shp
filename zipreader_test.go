@@ -49,8 +49,7 @@ func createTempZIP(prefix string, t *testing.T) (dir, filename string) {
 
 func getShapesZipped(prefix string, t *testing.T) (shapes []Shape) {
 	dir, filename := createTempZIP(prefix, t)
-	t.Logf("%s: %s %s", prefix, dir, filename)
-	//defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 	zr, err := OpenZip(filepath.Join(dir, filename))
 	if err != nil {
 		t.Fatalf("Error when opening zip file: %v", err)
@@ -69,20 +68,9 @@ func getShapesZipped(prefix string, t *testing.T) (shapes []Shape) {
 	return shapes
 }
 
-func TestZippedReadPoint(t *testing.T) {
-	prefix := "test_files/point"
-	points := dataForReadTests[prefix]
-	shapes := getShapesZipped(prefix, t)
-	if len(shapes) != len(points) {
-		t.Error("Number of shapes read was wrong.")
-	}
-	for n, s := range shapes {
-		p, ok := s.(*Point)
-		if !ok {
-			t.Fatal("Failed to type assert.")
-		}
-		if !pointsEqual([]float64{p.X, p.Y}, points[n]) {
-			t.Error("Points did not match.")
-		}
+func TestZipReader(t *testing.T) {
+	for prefix, _ := range dataForReadTests {
+		t.Logf("Testing zipped reading for %s", prefix)
+		test_shapeIdentity(t, prefix, getShapesZipped)
 	}
 }

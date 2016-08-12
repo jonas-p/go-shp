@@ -18,6 +18,9 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 	dbf := openFile(prefix+".dbf", t)
 
 	sr := SequentialReaderFromExt(shp, dbf)
+	if err := sr.Err(); err != nil {
+		t.Fatalf("Error when iterating over the shapefile header: %v", err)
+	}
 	for sr.Next() {
 		_, shape := sr.Shape()
 		shapes = append(shapes, shape)
@@ -32,21 +35,9 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 	return shapes
 }
 
-func TestSequentialReadPoint(t *testing.T) {
-	prefix := "test_files/point"
-	points := dataForReadTests[prefix]
-
-	shapes := getShapesSequentially(prefix, t)
-	if len(shapes) != len(points) {
-		t.Error("Number of shapes read was wrong.")
-	}
-	for n, s := range shapes {
-		p, ok := s.(*Point)
-		if !ok {
-			t.Fatal("Failed to type assert.")
-		}
-		if !pointsEqual([]float64{p.X, p.Y}, points[n]) {
-			t.Error("Points did not match.")
-		}
+func TestSequentialReader(t *testing.T) {
+	for prefix, _ := range dataForReadTests {
+		t.Logf("Testing sequential read for %s", prefix)
+		test_shapeIdentity(t, prefix, getShapesSequentially)
 	}
 }
