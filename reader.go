@@ -152,7 +152,11 @@ func (r *Reader) Next() bool {
 	binary.Read(er, binary.BigEndian, &size)
 	binary.Read(er, binary.LittleEndian, &shapetype)
 	if er.e != nil {
-		r.err = fmt.Errorf("Error when reading metadata of next shape: %v", er.e)
+		if er.e != io.EOF {
+			r.err = fmt.Errorf("Error when reading metadata of next shape: %v")
+		} else {
+			r.err = io.EOF
+		}
 		return false
 	}
 
