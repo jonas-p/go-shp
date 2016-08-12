@@ -26,6 +26,9 @@ func getShapesFromFile(prefix string, t *testing.T) (shapes []Shape) {
 		_, shape := file.Shape()
 		shapes = append(shapes, shape)
 	}
+	if file.Err() != nil {
+		t.Errorf("Error while getting shapes for %s: %v", prefix, file.Err())
+	}
 
 	return shapes
 }

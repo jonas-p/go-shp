@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -146,12 +147,21 @@ func (r *Reader) Next() bool {
 
 	var size int32
 	var shapetype ShapeType
-	binary.Read(r.shp, binary.BigEndian, &r.num)
-	binary.Read(r.shp, binary.BigEndian, &size)
-	binary.Read(r.shp, binary.LittleEndian, &shapetype)
+	er := &errReader{Reader: r.shp}
+	binary.Read(er, binary.BigEndian, &r.num)
+	binary.Read(er, binary.BigEndian, &size)
+	binary.Read(er, binary.LittleEndian, &shapetype)
+	if er.e != nil {
+		r.err = fmt.Errorf("Error when reading metadata of next shape: %v", er.e)
+		return false
+	}
 
 	r.shape = newShape(shapetype)
-	r.shape.read(r.shp)
+	r.shape.read(er)
+	if er.e != nil {
+		r.err = fmt.Errorf("Error while reading next shape: %v", er.e)
+		return false
+	}
 
 	// move to next object
 	r.shp.Seek(int64(size)*2+cur+8, 0)
