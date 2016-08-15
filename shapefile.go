@@ -3,6 +3,7 @@ package shp
 import (
 	"encoding/binary"
 	"io"
+	"strings"
 )
 
 type ShapeType int32
@@ -566,7 +567,7 @@ type Field struct {
 // Returns a string representation of the Field. Currently
 // this only returns field name.
 func (f Field) String() string {
-	return string(f.Name[:])
+	return strings.TrimRight(string(f.Name[:]), "\x00")
 }
 
 // Returns a StringField that can be used in SetFields to
