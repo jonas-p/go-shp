@@ -110,8 +110,15 @@ func (sr *seqReader) readHeaders() {
 	numFields := int(math.Floor(float64(sr.dbfHeaderLength-33) / 32.0))
 	sr.dbfFields = make([]Field, numFields)
 	binary.Read(er, binary.LittleEndian, &sr.dbfFields)
+	buf := make([]byte, 1)
+	er.Read(buf[:])
 	if er.e != nil {
-		sr.err = fmt.Errorf("Error when reading SHP header: %v", er.e)
+		sr.err = fmt.Errorf("Error when reading DBF header: %v", er.e)
+		return
+	}
+	if buf[0] != 0x0d {
+		sr.err = fmt.Errorf("Field descriptor array terminator not found")
+		return
 	}
 	sr.dbfRow = make([]byte, sr.dbfRecordLength)
 }
@@ -155,8 +162,12 @@ func (sr *seqReader) Next() bool {
 		sr.err = fmt.Errorf("Error when discarding bytes on sequential read: %v", ce)
 		return false
 	}
-	if _, err := sr.dbf.Read(sr.dbfRow); err != nil {
+	if _, err := io.ReadFull(sr.dbf, sr.dbfRow); err != nil {
 		sr.err = fmt.Errorf("Error when reading DBF row: %v", err)
+		return false
+	}
+	if sr.dbfRow[0] != 0x20 && sr.dbfRow[0] != 0x2a {
+		sr.err = fmt.Errorf("Attribute row %d starts with incorrect deletion indicator")
 	}
 	return sr.err == nil
 }
@@ -171,7 +182,7 @@ func (sr *seqReader) Attribute(n int) string {
 	if sr.err != nil {
 		return ""
 	}
-	start := 0
+	start := 1
 	f := 0
 	for ; f < n; f++ {
 		start += int(sr.dbfFields[f].Size)

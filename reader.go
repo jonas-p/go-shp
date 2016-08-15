@@ -195,7 +195,6 @@ func (r *Reader) openDbf() (err error) {
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
 	r.dbfFields = make([]Field, numFields)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
-
 	return
 }
 
