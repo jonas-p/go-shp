@@ -75,6 +75,55 @@ func TestZipReader(t *testing.T) {
 	}
 }
 
+// TestZipReaderAttributes reads the same shapesfile twice, first directly from
+// the Shp with a Reader, and, second, from a zip. It compares the fields as
+// well as the shapes and the attributes. For this test, the Shapes are
+// considered to be equal if their bounding boxes are equal.
+func TestZipReaderAttribute(t *testing.T) {
+	lr, err := Open("ne_110m_admin_0_countries.shp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lr.Close()
+	zr, err := OpenZip("ne_110m_admin_0_countries.zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zr.Close()
+	fsl := lr.Fields()
+	fsz := zr.Fields()
+	if len(fsl) != len(fsz) {
+		t.Fatalf("Number of attributes do not match: Wanted %d, got %d", len(fsl), len(fsz))
+	}
+	for i := range fsl {
+		if fsl[i] != fsz[i] {
+			t.Fatalf("Attribute %d (%s) does not match (%s)", i, fsl[i], fsz[i])
+		}
+	}
+	for zr.Next() && lr.Next() {
+		ln, ls := lr.Shape()
+		zn, zs := zr.Shape()
+		if ln != zn {
+			t.Fatalf("Sequence number wrong: Wanted %d, got %d", ln, zn)
+		}
+		if ls.BBox() != zs.BBox() {
+			t.Fatalf("Bounding boxes for shape #%d do not match", ln)
+		}
+		for i := range fsl {
+			la := lr.Attribute(i)
+			za := zr.Attribute(i)
+			if la != za {
+				t.Fatalf("Shape %d: Attribute %d (%s) are unequal: '%s' vs '%s'",
+					ln, i, fsl[i].FooString(), la, za)
+			}
+		}
+	}
+	if lr.Err() != nil {
+		t.Logf("Reader error: %v / ZipReader error: %v", lr.Err(), zr.Err())
+		t.FailNow()
+	}
+}
+
 func TestNaturalEarthZip(t *testing.T) {
 	zr, err := OpenZip("ne_110m_admin_0_countries.zip")
 	if err != nil {
