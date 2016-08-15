@@ -4,7 +4,9 @@ import (
 	"archive/zip"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 )
@@ -75,17 +77,56 @@ func TestZipReader(t *testing.T) {
 	}
 }
 
+func unzipToTempDir(t *testing.T, p string) string {
+	td, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	zip, err := zip.OpenReader(p)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer zip.Close()
+	for _, f := range zip.File {
+		_, fn := path.Split(f.Name)
+		pn := filepath.Join(td, fn)
+		t.Logf("Uncompress: %s -> %s", f.Name, pn)
+		w, err := os.Create(pn)
+		if err != nil {
+			t.Fatalf("Cannot unzip %s: %v", p, err)
+		}
+		defer w.Close()
+		r, err := f.Open()
+		if err != nil {
+			t.Fatalf("Cannot unzip %s: %v", p, err)
+		}
+		defer r.Close()
+		_, err = io.Copy(w, r)
+		if err != nil {
+			t.Fatalf("Cannot unzip %s: %v", p, err)
+		}
+	}
+	return td
+}
+
 // TestZipReaderAttributes reads the same shapesfile twice, first directly from
 // the Shp with a Reader, and, second, from a zip. It compares the fields as
 // well as the shapes and the attributes. For this test, the Shapes are
 // considered to be equal if their bounding boxes are equal.
 func TestZipReaderAttribute(t *testing.T) {
-	lr, err := Open("ne_110m_admin_0_countries.shp")
+	b := "ne_110m_admin_0_countries"
+	skipOrDownloadNaturalEarth(t, b+".zip")
+	d := unzipToTempDir(t, b+".zip")
+	defer os.RemoveAll(d)
+	lr, err := Open(filepath.Join(d, b+".shp"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer lr.Close()
-	zr, err := OpenZip("ne_110m_admin_0_countries.zip")
+	zr, err := OpenZip(b + ".zip")
+	if os.IsNotExist(err) {
+		t.Skipf("Skipping test, as Natural Earth dataset wasn't found")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +136,9 @@ func TestZipReaderAttribute(t *testing.T) {
 	if len(fsl) != len(fsz) {
 		t.Fatalf("Number of attributes do not match: Wanted %d, got %d", len(fsl), len(fsz))
 	}
+	sum := 0
 	for i := range fsl {
+		sum += int(fsz[i].Size)
 		if fsl[i] != fsz[i] {
 			t.Fatalf("Attribute %d (%s) does not match (%s)", i, fsl[i], fsz[i])
 		}
@@ -107,14 +150,14 @@ func TestZipReaderAttribute(t *testing.T) {
 			t.Fatalf("Sequence number wrong: Wanted %d, got %d", ln, zn)
 		}
 		if ls.BBox() != zs.BBox() {
-			t.Fatalf("Bounding boxes for shape #%d do not match", ln)
+			t.Fatalf("Bounding boxes for shape #%d do not match", ln+1)
 		}
 		for i := range fsl {
 			la := lr.Attribute(i)
 			za := zr.Attribute(i)
 			if la != za {
 				t.Fatalf("Shape %d: Attribute %d (%s) are unequal: '%s' vs '%s'",
-					ln, i, fsl[i].FooString(), la, za)
+					ln+1, i, fsl[i].String(), la, za)
 			}
 		}
 	}
@@ -124,16 +167,72 @@ func TestZipReaderAttribute(t *testing.T) {
 	}
 }
 
+func skipOrDownloadNaturalEarth(t *testing.T, p string) {
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		dl := false
+		for _, a := range os.Args {
+			if a == "download" {
+				dl = true
+				break
+			}
+		}
+		u := "http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip"
+		if !dl {
+			t.Skipf("Skipped, as %s does not exist. Consider calling tests with '-args download` "+
+				"or download manually from '%s'", p, u)
+		} else {
+			t.Logf("Downloading %s", u)
+			w, err := os.Create(p)
+			if err != nil {
+				t.Fatalf("Could not download: %p: %v", p, err)
+			}
+			defer w.Close()
+			resp, err := http.Get(u)
+			if err != nil {
+				t.Fatalf("Could not download: %p: %v", p, err)
+			}
+			defer resp.Body.Close()
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				t.Fatalf("Could not download: %p: %v", p, err)
+			}
+			t.Logf("Download complete")
+		}
+	}
+}
+
 func TestNaturalEarthZip(t *testing.T) {
-	zr, err := OpenZip("ne_110m_admin_0_countries.zip")
+	type metaShape struct {
+		Attributes map[string]string
+		Shape
+	}
+	p := "ne_110m_admin_0_countries.zip"
+	skipOrDownloadNaturalEarth(t, p)
+	zr, err := OpenZip(p)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer zr.Close()
-	t.Log(len(zr.Fields()))
+
+	fs := zr.Fields()
+	if len(fs) != 63 {
+		t.Fatalf("Expected 63 columns in Natural Earth dataset, got %d", len(fs))
+	}
+	var metas []metaShape
 	for zr.Next() {
+		m := metaShape{
+			Attributes: make(map[string]string),
+		}
+		_, m.Shape = zr.Shape()
+		for n := range fs {
+			m.Attributes[fs[n].String()] = zr.Attribute(n)
+		}
+		metas = append(metas, m)
 	}
 	if zr.Err() != nil {
 		t.Fatal(zr.Err())
+	}
+	for _, m := range metas {
+		t.Log(m.Attributes["name"])
 	}
 }
