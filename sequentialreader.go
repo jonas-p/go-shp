@@ -106,7 +106,7 @@ func (sr *seqReader) readHeaders() {
 	binary.Read(er, binary.LittleEndian, &sr.dbfNumRecords)
 	binary.Read(er, binary.LittleEndian, &sr.dbfHeaderLength)
 	binary.Read(er, binary.LittleEndian, &sr.dbfRecordLength)
-	io.CopyN(ioutil.Discard, er, 4) // skip padding
+	io.CopyN(ioutil.Discard, er, 20) // skip padding
 	numFields := int(math.Floor(float64(sr.dbfHeaderLength-33) / 32.0))
 	sr.dbfFields = make([]Field, numFields)
 	binary.Read(er, binary.LittleEndian, &sr.dbfFields)
