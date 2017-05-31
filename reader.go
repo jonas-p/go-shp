@@ -2,6 +2,8 @@ package shp
 
 import (
 	"encoding/binary"
+	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -15,6 +17,7 @@ import (
 type Reader struct {
 	GeometryType ShapeType
 	bbox         Box
+	err          error
 
 	shp        *os.File
 	shape      Shape
@@ -57,25 +60,28 @@ func (r *Reader) readHeaders() {
 	binary.Read(r.shp, binary.BigEndian, &filelength)
 	r.shp.Seek(32, 0)
 	binary.Read(r.shp, binary.LittleEndian, &r.GeometryType)
-	r.bbox.MinX = r.readFloat64()
-	r.bbox.MinY = r.readFloat64()
-	r.bbox.MaxX = r.readFloat64()
-	r.bbox.MaxY = r.readFloat64()
+	r.bbox.MinX = readFloat64(r.shp)
+	r.bbox.MinY = readFloat64(r.shp)
+	r.bbox.MaxX = readFloat64(r.shp)
+	r.bbox.MaxY = readFloat64(r.shp)
 	r.shp.Seek(100, 0)
 }
 
-func (r *Reader) readFloat64() float64 {
+func readFloat64(r io.Reader) float64 {
 	var bits uint64
-	binary.Read(r.shp, binary.LittleEndian, &bits)
+	binary.Read(r, binary.LittleEndian, &bits)
 	return math.Float64frombits(bits)
 }
 
 // Close closes the Shapefile.
-func (r *Reader) Close() {
-	r.shp.Close()
-	if r.dbf != nil {
-		r.dbf.Close()
+func (r *Reader) Close() error {
+	if r.err == nil {
+		r.err = r.shp.Close()
+		if r.dbf != nil {
+			r.dbf.Close()
+		}
 	}
+	return r.err
 }
 
 // Shape returns the most recent feature that was read by
@@ -84,6 +90,49 @@ func (r *Reader) Close() {
 // can be used as row in ReadAttribute, and the Shape is the object.
 func (r *Reader) Shape() (int, Shape) {
 	return int(r.num) - 1, r.shape
+}
+
+// Attribute returns value of the n-th attribute of the most recent feature
+// that was read by a call to Next.
+func (r *Reader) Attribute(n int) string {
+	return r.ReadAttribute(int(r.num)-1, n)
+}
+
+// newShape creates a new shape with a given type.
+func newShape(shapetype ShapeType) Shape {
+	switch shapetype {
+	case NULL:
+		return new(Null)
+	case POINT:
+		return new(Point)
+	case POLYLINE:
+		return new(PolyLine)
+	case POLYGON:
+		return new(Polygon)
+	case MULTIPOINT:
+		return new(MultiPoint)
+	case POINTZ:
+		return new(PointZ)
+	case POLYLINEZ:
+		return new(PolyLineZ)
+	case POLYGONZ:
+		return new(PolygonZ)
+	case MULTIPOINTZ:
+		return new(MultiPointZ)
+	case POINTM:
+		return new(PointM)
+	case POLYLINEM:
+		return new(PolyLineM)
+	case POLYGONM:
+		return new(PolygonM)
+	case MULTIPOINTM:
+		return new(MultiPointM)
+	case MULTIPATCH:
+		return new(MultiPatch)
+	default:
+		log.Fatal("Unsupported shape type:", shapetype)
+		return nil
+	}
 }
 
 // Next reads in the next Shape in the Shapefile, which
@@ -98,43 +147,25 @@ func (r *Reader) Next() bool {
 
 	var size int32
 	var shapetype ShapeType
-	binary.Read(r.shp, binary.BigEndian, &r.num)
-	binary.Read(r.shp, binary.BigEndian, &size)
-	binary.Read(r.shp, binary.LittleEndian, &shapetype)
-
-	switch shapetype {
-	case NULL:
-		r.shape = new(Null)
-	case POINT:
-		r.shape = new(Point)
-	case POLYLINE:
-		r.shape = new(PolyLine)
-	case POLYGON:
-		r.shape = new(Polygon)
-	case MULTIPOINT:
-		r.shape = new(MultiPoint)
-	case POINTZ:
-		r.shape = new(PointZ)
-	case POLYLINEZ:
-		r.shape = new(PolyLineZ)
-	case POLYGONZ:
-		r.shape = new(PolygonZ)
-	case MULTIPOINTZ:
-		r.shape = new(MultiPointZ)
-	case POINTM:
-		r.shape = new(PointM)
-	case POLYLINEM:
-		r.shape = new(PolyLineM)
-	case POLYGONM:
-		r.shape = new(PolygonM)
-	case MULTIPOINTM:
-		r.shape = new(MultiPointM)
-	case MULTIPATCH:
-		r.shape = new(MultiPatch)
-	default:
-		log.Fatal("Unsupported shape type:", shapetype)
+	er := &errReader{Reader: r.shp}
+	binary.Read(er, binary.BigEndian, &r.num)
+	binary.Read(er, binary.BigEndian, &size)
+	binary.Read(er, binary.LittleEndian, &shapetype)
+	if er.e != nil {
+		if er.e != io.EOF {
+			r.err = fmt.Errorf("Error when reading metadata of next shape: %v")
+		} else {
+			r.err = io.EOF
+		}
+		return false
 	}
-	r.shape.read(r.shp)
+
+	r.shape = newShape(shapetype)
+	r.shape.read(er)
+	if er.e != nil {
+		r.err = fmt.Errorf("Error while reading next shape: %v", er.e)
+		return false
+	}
 
 	// move to next object
 	r.shp.Seek(int64(size)*2+cur+8, 0)
@@ -164,7 +195,6 @@ func (r *Reader) openDbf() (err error) {
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
 	r.dbfFields = make([]Field, numFields)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
-
 	return
 }
 
@@ -173,6 +203,14 @@ func (r *Reader) openDbf() (err error) {
 func (r *Reader) Fields() []Field {
 	r.openDbf() // make sure we have dbf file to read from
 	return r.dbfFields
+}
+
+// Err returns the last non-EOF error encountered.
+func (r *Reader) Err() error {
+	if r.err == io.EOF {
+		return nil
+	}
+	return r.err
 }
 
 // AttributeCount returns number of records in the DBF table.

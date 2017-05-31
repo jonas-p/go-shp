@@ -42,7 +42,11 @@ func TestWritePoint(t *testing.T) {
 	}
 	shape.Close()
 
-	test_Point(t, filename+".shp", points, len(points))
+	shapes := getShapesFromFile(filename, t)
+	if len(shapes) != len(points) {
+		t.Error("Number of shapes read was wrong")
+	}
+	test_Point(t, points, shapes)
 }
 
 func TestWritePolyLine(t *testing.T) {
@@ -62,5 +66,9 @@ func TestWritePolyLine(t *testing.T) {
 	shape.Write(NewPolyLine(points))
 	shape.Close()
 
-	test_PolyLine(t, filename+".shp", pointsToFloats(flatten(points)), 1)
+	shapes := getShapesFromFile(filename, t)
+	if len(shapes) != 1 {
+		t.Error("Number of shapes read was wrong")
+	}
+	test_PolyLine(t, pointsToFloats(flatten(points)), shapes)
 }

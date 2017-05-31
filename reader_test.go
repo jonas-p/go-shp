@@ -14,7 +14,8 @@ func pointsEqual(a, b []float64) bool {
 	return true
 }
 
-func getShapes(filename string, t *testing.T) (shapes []Shape) {
+func getShapesFromFile(prefix string, t *testing.T) (shapes []Shape) {
+	filename := prefix + ".shp"
 	file, err := Open(filename)
 	if err != nil {
 		t.Fatal("Failed to open shapefile: " + filename + " (" + err.Error() + ")")
@@ -25,15 +26,18 @@ func getShapes(filename string, t *testing.T) (shapes []Shape) {
 		_, shape := file.Shape()
 		shapes = append(shapes, shape)
 	}
+	if file.Err() != nil {
+		t.Errorf("Error while getting shapes for %s: %v", prefix, file.Err())
+	}
 
 	return shapes
 }
 
-func test_Point(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+type shapeGetterFunc func(string, *testing.T) []Shape
+
+type identityTestFunc func(*testing.T, [][]float64, []Shape)
+
+func test_Point(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*Point)
 		if !ok {
@@ -45,11 +49,7 @@ func test_Point(t *testing.T, filename string, points [][]float64, shapes_num in
 	}
 }
 
-func test_PolyLine(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PolyLine(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLine)
 		if !ok {
@@ -63,11 +63,7 @@ func test_PolyLine(t *testing.T, filename string, points [][]float64, shapes_num
 	}
 }
 
-func test_Polygon(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_Polygon(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*Polygon)
 		if !ok {
@@ -81,11 +77,7 @@ func test_Polygon(t *testing.T, filename string, points [][]float64, shapes_num 
 	}
 }
 
-func test_MultiPoint(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_MultiPoint(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPoint)
 		if !ok {
@@ -99,11 +91,7 @@ func test_MultiPoint(t *testing.T, filename string, points [][]float64, shapes_n
 	}
 }
 
-func test_PointZ(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PointZ)
 		if !ok {
@@ -115,11 +103,7 @@ func test_PointZ(t *testing.T, filename string, points [][]float64, shapes_num i
 	}
 }
 
-func test_PolyLineZ(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PolyLineZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLineZ)
 		if !ok {
@@ -133,11 +117,7 @@ func test_PolyLineZ(t *testing.T, filename string, points [][]float64, shapes_nu
 	}
 }
 
-func test_PolygonZ(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PolygonZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolygonZ)
 		if !ok {
@@ -151,11 +131,7 @@ func test_PolygonZ(t *testing.T, filename string, points [][]float64, shapes_num
 	}
 }
 
-func test_MultiPointZ(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_MultiPointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPointZ)
 		if !ok {
@@ -169,11 +145,7 @@ func test_MultiPointZ(t *testing.T, filename string, points [][]float64, shapes_
 	}
 }
 
-func test_PointM(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PointM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PointM)
 		if !ok {
@@ -185,11 +157,7 @@ func test_PointM(t *testing.T, filename string, points [][]float64, shapes_num i
 	}
 }
 
-func test_PolyLineM(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PolyLineM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLineM)
 		if !ok {
@@ -203,11 +171,7 @@ func test_PolyLineM(t *testing.T, filename string, points [][]float64, shapes_nu
 	}
 }
 
-func test_PolygonM(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_PolygonM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolygonM)
 		if !ok {
@@ -221,11 +185,7 @@ func test_PolygonM(t *testing.T, filename string, points [][]float64, shapes_num
 	}
 }
 
-func test_MultiPointM(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_MultiPointM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPointM)
 		if !ok {
@@ -239,11 +199,7 @@ func test_MultiPointM(t *testing.T, filename string, points [][]float64, shapes_
 	}
 }
 
-func test_MultiPatch(t *testing.T, filename string, points [][]float64, shapes_num int) {
-	shapes := getShapes(filename, t)
-	if len(shapes) != shapes_num {
-		t.Error("Number of shapes read was wrong.")
-	}
+func test_MultiPatch(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPatch)
 		if !ok {
@@ -255,6 +211,15 @@ func test_MultiPatch(t *testing.T, filename string, points [][]float64, shapes_n
 			}
 		}
 	}
+}
+
+func test_shapeIdentity(t *testing.T, prefix string, getter shapeGetterFunc) {
+	shapes := getter(prefix, t)
+	d := dataForReadTests[prefix]
+	if len(shapes) != d.count {
+		t.Errorf("Number of shapes for %s read was wrong. Wanted %d, got %d.", prefix, d.count, len(shapes))
+	}
+	d.tester(t, d.points, shapes)
 }
 
 func TestReadBBox(t *testing.T) {
@@ -296,161 +261,222 @@ func TestReadBBox(t *testing.T) {
 	}
 }
 
+type testCaseData struct {
+	points [][]float64
+	tester identityTestFunc
+	count  int
+}
+
+var dataForReadTests = map[string]testCaseData{
+	"test_files/polygonm": testCaseData{
+		points: [][]float64{
+			{0, 0, 0},
+			{0, 5, 5},
+			{5, 5, 10},
+			{5, 0, 15},
+			{0, 0, 0},
+		},
+		tester: test_PolygonM,
+		count:  1,
+	},
+	"test_files/multipointm": testCaseData{
+		points: [][]float64{
+			{10, 10, 100},
+			{5, 5, 50},
+			{0, 10, 75},
+		},
+		tester: test_MultiPointM,
+		count:  1,
+	},
+	"test_files/multipatch": testCaseData{
+		points: [][]float64{
+			{0, 0, 0},
+			{10, 0, 0},
+			{10, 10, 0},
+			{0, 10, 0},
+			{0, 0, 0},
+			{0, 10, 0},
+			{0, 10, 10},
+			{0, 0, 10},
+			{0, 0, 0},
+			{0, 10, 0},
+			{10, 0, 0},
+			{10, 0, 10},
+			{10, 10, 10},
+			{10, 10, 0},
+			{10, 0, 0},
+			{0, 0, 0},
+			{0, 0, 10},
+			{10, 0, 10},
+			{10, 0, 0},
+			{0, 0, 0},
+			{10, 10, 0},
+			{10, 10, 10},
+			{0, 10, 10},
+			{0, 10, 0},
+			{10, 10, 0},
+			{0, 0, 10},
+			{0, 10, 10},
+			{10, 10, 10},
+			{10, 0, 10},
+			{0, 0, 10},
+		},
+		tester: test_MultiPatch,
+		count:  1,
+	},
+	"test_files/point": testCaseData{
+		points: [][]float64{
+			{10, 10},
+			{5, 5},
+			{0, 10},
+		},
+		tester: test_Point,
+		count:  3,
+	},
+	"test_files/polyline": testCaseData{
+		points: [][]float64{
+			{0, 0},
+			{5, 5},
+			{10, 10},
+			{15, 15},
+			{20, 20},
+			{25, 25},
+		},
+		tester: test_PolyLine,
+		count:  2,
+	},
+	"test_files/polygon": testCaseData{
+		points: [][]float64{
+			{0, 0},
+			{0, 5},
+			{5, 5},
+			{5, 0},
+			{0, 0},
+		},
+		tester: test_Polygon,
+		count:  1,
+	},
+	"test_files/multipoint": testCaseData{
+		points: [][]float64{
+			{10, 10},
+			{5, 5},
+			{0, 10},
+		},
+		tester: test_MultiPoint,
+		count:  1,
+	},
+	"test_files/pointz": testCaseData{
+		points: [][]float64{
+			{10, 10, 100},
+			{5, 5, 50},
+			{0, 10, 75},
+		},
+		tester: test_PointZ,
+		count:  3,
+	},
+	"test_files/polylinez": testCaseData{
+		points: [][]float64{
+			{0, 0, 0},
+			{5, 5, 5},
+			{10, 10, 10},
+			{15, 15, 15},
+			{20, 20, 20},
+			{25, 25, 25},
+		},
+		tester: test_PolyLineZ,
+		count:  2,
+	},
+	"test_files/polygonz": testCaseData{
+		points: [][]float64{
+			{0, 0, 0},
+			{0, 5, 5},
+			{5, 5, 10},
+			{5, 0, 15},
+			{0, 0, 0},
+		},
+		tester: test_PolygonZ,
+		count:  1,
+	},
+	"test_files/multipointz": testCaseData{
+		points: [][]float64{
+			{10, 10, 100},
+			{5, 5, 50},
+			{0, 10, 75},
+		},
+		tester: test_MultiPointZ,
+		count:  1,
+	},
+	"test_files/pointm": testCaseData{
+		points: [][]float64{
+			{10, 10, 100},
+			{5, 5, 50},
+			{0, 10, 75},
+		},
+		tester: test_PointM,
+		count:  3,
+	},
+	"test_files/polylinem": testCaseData{
+		points: [][]float64{
+			{0, 0, 0},
+			{5, 5, 5},
+			{10, 10, 10},
+			{15, 15, 15},
+			{20, 20, 20},
+			{25, 25, 25},
+		},
+		tester: test_PolyLineM,
+		count:  2,
+	},
+}
+
 func TestReadPoint(t *testing.T) {
-	points := [][]float64{
-		{10, 10},
-		{5, 5},
-		{0, 10},
-	}
-	test_Point(t, "test_files/point.shp", points, 3)
+	test_shapeIdentity(t, "test_files/point", getShapesFromFile)
 }
 
 func TestReadPolyLine(t *testing.T) {
-	points := [][]float64{
-		{0, 0},
-		{5, 5},
-		{10, 10},
-		{15, 15},
-		{20, 20},
-		{25, 25},
-	}
-	test_PolyLine(t, "test_files/polyline.shp", points, 2)
+	test_shapeIdentity(t, "test_files/polyline", getShapesFromFile)
 }
 
 func TestReadPolygon(t *testing.T) {
-	points := [][]float64{
-		{0, 0},
-		{0, 5},
-		{5, 5},
-		{5, 0},
-		{0, 0},
-	}
-	test_Polygon(t, "test_files/polygon.shp", points, 1)
+	test_shapeIdentity(t, "test_files/polygon", getShapesFromFile)
 }
 
 func TestReadMultiPoint(t *testing.T) {
-	points := [][]float64{
-		{10, 10},
-		{5, 5},
-		{0, 10},
-	}
-	test_MultiPoint(t, "test_files/multipoint.shp", points, 1)
+	test_shapeIdentity(t, "test_files/multipoint", getShapesFromFile)
 }
 
 func TestReadPointZ(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_PointZ(t, "test_files/pointz.shp", points, 3)
+	test_shapeIdentity(t, "test_files/pointz", getShapesFromFile)
 }
 
 func TestReadPolyLineZ(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{5, 5, 5},
-		{10, 10, 10},
-		{15, 15, 15},
-		{20, 20, 20},
-		{25, 25, 25},
-	}
-	test_PolyLineZ(t, "test_files/polylinez.shp", points, 2)
+	test_shapeIdentity(t, "test_files/polylinez", getShapesFromFile)
 }
 
 func TestReadPolygonZ(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{0, 5, 5},
-		{5, 5, 10},
-		{5, 0, 15},
-		{0, 0, 0},
-	}
-	test_PolygonZ(t, "test_files/polygonz.shp", points, 1)
+	test_shapeIdentity(t, "test_files/polygonz", getShapesFromFile)
 }
 
 func TestReadMultiPointZ(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_MultiPointZ(t, "test_files/multipointz.shp", points, 1)
+	test_shapeIdentity(t, "test_files/multipointz", getShapesFromFile)
 }
 
 func TestReadPointM(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_PointM(t, "test_files/pointm.shp", points, 3)
+	test_shapeIdentity(t, "test_files/pointm", getShapesFromFile)
 }
 
 func TestReadPolyLineM(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{5, 5, 5},
-		{10, 10, 10},
-		{15, 15, 15},
-		{20, 20, 20},
-		{25, 25, 25},
-	}
-	test_PolyLineM(t, "test_files/polylinem.shp", points, 2)
+	test_shapeIdentity(t, "test_files/polylinem", getShapesFromFile)
 }
 
 func TestReadPolygonM(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{0, 5, 5},
-		{5, 5, 10},
-		{5, 0, 15},
-		{0, 0, 0},
-	}
-	test_PolygonM(t, "test_files/polygonm.shp", points, 1)
+	test_shapeIdentity(t, "test_files/polygonm", getShapesFromFile)
 }
 
 func TestReadMultiPointM(t *testing.T) {
-	points := [][]float64{
-		{10, 10, 100},
-		{5, 5, 50},
-		{0, 10, 75},
-	}
-	test_MultiPointM(t, "test_files/multipointm.shp", points, 1)
+	test_shapeIdentity(t, "test_files/multipointm", getShapesFromFile)
 }
 
-func TestReadMultipatch(t *testing.T) {
-	points := [][]float64{
-		{0, 0, 0},
-		{10, 0, 0},
-		{10, 10, 0},
-		{0, 10, 0},
-		{0, 0, 0},
-		{0, 10, 0},
-		{0, 10, 10},
-		{0, 0, 10},
-		{0, 0, 0},
-		{0, 10, 0},
-		{10, 0, 0},
-		{10, 0, 10},
-		{10, 10, 10},
-		{10, 10, 0},
-		{10, 0, 0},
-		{0, 0, 0},
-		{0, 0, 10},
-		{10, 0, 10},
-		{10, 0, 0},
-		{0, 0, 0},
-		{10, 10, 0},
-		{10, 10, 10},
-		{0, 10, 10},
-		{0, 10, 0},
-		{10, 10, 0},
-		{0, 0, 10},
-		{0, 10, 10},
-		{10, 10, 10},
-		{10, 0, 10},
-		{0, 0, 10},
-	}
-	test_MultiPatch(t, "test_files/multipatch.shp", points, 1)
+func TestReadMultiPatch(t *testing.T) {
+	test_shapeIdentity(t, "test_files/multipatch", getShapesFromFile)
 }
