@@ -148,7 +148,13 @@ func (sr *seqReader) Next() bool {
 	sr.num = num
 	sr.shape = newShape(shapetype)
 	sr.shape.read(er)
-	if er.e != nil {
+	switch {
+	case er.e == io.EOF:
+		// io.EOF means end-of-file was reached gracefully after all
+		// shape-internal reads succeeded, so it's not a reason stop
+		// iterating over all shapes.
+		er.e = nil
+	case er.e != nil:
 		sr.err = fmt.Errorf("Error while reading next shape: %v", er.e)
 		return false
 	}
