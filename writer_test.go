@@ -2,6 +2,7 @@ package shp
 
 import (
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -63,7 +64,24 @@ func TestWritePolyLine(t *testing.T) {
 		t.Log(shape, err)
 	}
 
-	shape.Write(NewPolyLine(points))
+	l := NewPolyLine(points)
+
+	lWant := &PolyLine{
+		Box:       Box{MinX: 0, MinY: 0, MaxX: 15, MaxY: 15},
+		NumParts:  2,
+		NumPoints: 4,
+		Parts:     []int32{0, 2},
+		Points: []Point{Point{X: 0, Y: 0},
+			Point{X: 5, Y: 5},
+			Point{X: 10, Y: 10},
+			Point{X: 15, Y: 15},
+		},
+	}
+	if !reflect.DeepEqual(l, lWant) {
+		t.Errorf("incorrect NewLine: have: %+v; want: %+v", l, lWant)
+	}
+
+	shape.Write(l)
 	shape.Close()
 
 	shapes := getShapesFromFile(filename, t)

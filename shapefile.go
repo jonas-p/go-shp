@@ -157,6 +157,11 @@ func NewPolyLine(parts [][]Point) *PolyLine {
 	p.NumParts = int32(len(parts))
 	p.NumPoints = int32(len(points))
 	p.Parts = make([]int32, len(parts))
+	var marker int32
+	for i, part := range parts {
+		p.Parts[i] = marker
+		marker += int32(len(part))
+	}
 	p.Points = points
 	p.Box = p.BBox()
 
