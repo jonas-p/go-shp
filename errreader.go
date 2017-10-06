@@ -1,6 +1,9 @@
 package shp
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // errReader is a helper to perform multiple successive read from another reader
 // and do the error checking only once afterwards. It will not perform any new
@@ -13,7 +16,7 @@ type errReader struct {
 
 func (er *errReader) Read(p []byte) (n int, err error) {
 	if er.e != nil {
-		return 0, er.e
+		return 0, fmt.Errorf("unable to read after previous error: %v", er.e)
 	}
 	n, er.e = er.Reader.Read(p)
 	er.n += int64(n)
