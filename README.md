@@ -1,6 +1,8 @@
 go-shp
 ======
 
+[![Build Status](https://travis-ci.org/jonas-p/go-shp.svg?branch=master)](https://travis-ci.org/jonas-p/go-shp)
+
 Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI Shapefile technical description.
 
 ### Usage

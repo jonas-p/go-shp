@@ -1,0 +1,17 @@
+language: go
+sudo: false
+
+go:
+  - 1.8.x
+  - 1.9.x
+  - master
+
+os:
+  - linux
+
+branches:
+  only:
+    - master
+
+#after_success:
+#  - bash <(curl -s https://codecov.io/bash) -f all.cov
