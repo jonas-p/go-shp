@@ -1,4 +1,4 @@
-clone_folder: c:\restic
+clone_folder: c:\go-shp
 
 environment:
   GOPATH: c:\gopath
