@@ -21,3 +21,6 @@ install:
   - msiexec /i go1.9.windows-amd64.msi /q
   - go version
   - go env
+
+build_script:
+  - go test ./...
