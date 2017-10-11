@@ -4,15 +4,14 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 	"strings"
 )
 
 // ZipReader provides an interface for reading Shapefiles that are compressed in a ZIP archive.
 type ZipReader struct {
-	prefix string
-	sr     SequentialReader
-	z      *zip.ReadCloser
+	sr SequentialReader
+	z  *zip.ReadCloser
 }
 
 // openFromZIP is convenience function for opening the file called name that is
@@ -27,25 +26,69 @@ func openFromZIP(z *zip.ReadCloser, name string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("No such file in archive: %s", name)
 }
 
-// OpenZip opens a ZIP file that contains a shapefile. The path of the
-// SHP and DBF file in the ZIP must be the same as the basename of the ZIP
-// itself.
+func countAndFirstShape(z *zip.ReadCloser) (int, string) {
+	count := 0
+	firstShape := ""
+	for _, f := range z.File {
+		if strings.HasSuffix(f.Name, ".shp") {
+			count++
+			if firstShape == "" {
+				firstShape = f.Name
+			}
+		}
+	}
+	return count, firstShape
+}
+
+// OpenZip opens a ZIP file that contains a single shapefile.
 func OpenZip(zipFilePath string) (*ZipReader, error) {
 	z, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		return nil, err
 	}
-	b := filepath.Base(zipFilePath)
 	zr := &ZipReader{
-		prefix: strings.TrimSuffix(b, filepath.Ext(b)),
-		z:      z,
+		z: z,
 	}
-	shp, err := openFromZIP(zr.z, zr.prefix+".shp")
+	count, first := countAndFirstShape(z)
+	if count == 0 {
+		return nil, fmt.Errorf("archive does not contain a .shp file")
+	}
+	if count > 1 {
+		return nil, fmt.Errorf("archive does contain multiple .shp files")
+	}
+	prefix := strings.TrimSuffix(first, path.Ext(first))
+
+	shp, err := openFromZIP(zr.z, prefix+".shp")
 	if err != nil {
 		return nil, err
 	}
 	// dbf is optional, so no error checking here
-	dbf, _ := openFromZIP(zr.z, zr.prefix+".dbf")
+	dbf, _ := openFromZIP(zr.z, prefix+".dbf")
+	zr.sr = SequentialReaderFromExt(shp, dbf)
+	return zr, nil
+}
+
+// OpenZipWithName opens a shape file that is contained in a ZIP achive. The
+// parameter name name of the shape file.
+// It must be a relative path: it must not start with a drive
+// letter (e.g. C:) or leading slash, and only forward slashes
+// are allowed.
+func OpenZipWithName(zipFilePath string, name string) (*ZipReader, error) {
+	z, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return nil, err
+	}
+	zr := &ZipReader{
+		z: z,
+	}
+
+	shp, err := openFromZIP(zr.z, name)
+	if err != nil {
+		return nil, err
+	}
+	// dbf is optional, so no error checking here
+	prefix := strings.TrimSuffix(name, path.Ext(name))
+	dbf, _ := openFromZIP(zr.z, prefix+".dbf")
 	zr.sr = SequentialReaderFromExt(shp, dbf)
 	return zr, nil
 }
