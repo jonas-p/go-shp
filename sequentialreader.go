@@ -36,7 +36,7 @@ type SequentialReader interface {
 	Err() error
 }
 
-// Attributes() returns all attributes of the shape that sr was last advanced to.
+// Attributes returns all attributes of the shape that sr was last advanced to.
 func Attributes(sr SequentialReader) []string {
 	if sr.Err() != nil {
 		return nil
@@ -173,7 +173,7 @@ func (sr *seqReader) Next() bool {
 		return false
 	}
 	if sr.dbfRow[0] != 0x20 && sr.dbfRow[0] != 0x2a {
-		sr.err = fmt.Errorf("Attribute row %d starts with incorrect deletion indicator")
+		sr.err = fmt.Errorf("Attribute row %d starts with incorrect deletion indicator", num)
 	}
 	return sr.err == nil
 }

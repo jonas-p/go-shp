@@ -30,14 +30,14 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 	}
 
 	if err := sr.Close(); err != nil {
-		t.Error("Could not close sequential reader: %v", err)
+		t.Errorf("Could not close sequential reader: %v", err)
 	}
 	return shapes
 }
 
 func TestSequentialReader(t *testing.T) {
-	for prefix, _ := range dataForReadTests {
+	for prefix := range dataForReadTests {
 		t.Logf("Testing sequential read for %s", prefix)
-		test_shapeIdentity(t, prefix, getShapesSequentially)
+		testshapeIdentity(t, prefix, getShapesSequentially)
 	}
 }

@@ -71,9 +71,9 @@ func getShapesZipped(prefix string, t *testing.T) (shapes []Shape) {
 }
 
 func TestZipReader(t *testing.T) {
-	for prefix, _ := range dataForReadTests {
+	for prefix := range dataForReadTests {
 		t.Logf("Testing zipped reading for %s", prefix)
-		test_shapeIdentity(t, prefix, getShapesZipped)
+		testshapeIdentity(t, prefix, getShapesZipped)
 	}
 }
 
@@ -136,9 +136,7 @@ func TestZipReaderAttribute(t *testing.T) {
 	if len(fsl) != len(fsz) {
 		t.Fatalf("Number of attributes do not match: Wanted %d, got %d", len(fsl), len(fsz))
 	}
-	sum := 0
 	for i := range fsl {
-		sum += int(fsz[i].Size)
 		if fsl[i] != fsz[i] {
 			t.Fatalf("Attribute %d (%s) does not match (%s)", i, fsl[i], fsz[i])
 		}
@@ -184,17 +182,17 @@ func skipOrDownloadNaturalEarth(t *testing.T, p string) {
 			t.Logf("Downloading %s", u)
 			w, err := os.Create(p)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not create %q: %v", p, err)
 			}
 			defer w.Close()
 			resp, err := http.Get(u)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not download %q: %v", u, err)
 			}
 			defer resp.Body.Close()
 			_, err = io.Copy(w, resp.Body)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not download %q: %v", u, err)
 			}
 			t.Logf("Download complete")
 		}

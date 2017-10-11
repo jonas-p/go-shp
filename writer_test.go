@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var filename_prefix string = "test_files/write_"
+var filenamePrefix = "test_files/write_"
 
 func removeShapefile(filename string) {
 	os.Remove(filename + ".shp")
@@ -25,7 +25,7 @@ func pointsToFloats(points []Point) [][]float64 {
 }
 
 func TestWritePoint(t *testing.T) {
-	filename := filename_prefix + "point"
+	filename := filenamePrefix + "point"
 	defer removeShapefile(filename)
 
 	points := [][]float64{
@@ -47,11 +47,11 @@ func TestWritePoint(t *testing.T) {
 	if len(shapes) != len(points) {
 		t.Error("Number of shapes read was wrong")
 	}
-	test_Point(t, points, shapes)
+	testPoint(t, points, shapes)
 }
 
 func TestWritePolyLine(t *testing.T) {
-	filename := filename_prefix + "polyline"
+	filename := filenamePrefix + "polyline"
 	defer removeShapefile(filename)
 
 	points := [][]Point{
@@ -71,10 +71,10 @@ func TestWritePolyLine(t *testing.T) {
 		NumParts:  2,
 		NumPoints: 4,
 		Parts:     []int32{0, 2},
-		Points: []Point{Point{X: 0, Y: 0},
-			Point{X: 5, Y: 5},
-			Point{X: 10, Y: 10},
-			Point{X: 15, Y: 15},
+		Points: []Point{{X: 0, Y: 0},
+			{X: 5, Y: 5},
+			{X: 10, Y: 10},
+			{X: 15, Y: 15},
 		},
 	}
 	if !reflect.DeepEqual(l, lWant) {
@@ -88,5 +88,5 @@ func TestWritePolyLine(t *testing.T) {
 	if len(shapes) != 1 {
 		t.Error("Number of shapes read was wrong")
 	}
-	test_PolyLine(t, pointsToFloats(flatten(points)), shapes)
+	testPolyLine(t, pointsToFloats(flatten(points)), shapes)
 }

@@ -44,6 +44,7 @@ func Open(filename string) (*Reader, error) {
 	return s, nil
 }
 
+// BBox returns the bounding box of the shapefile.
 func (r *Reader) BBox() Box {
 	return r.bbox
 }
@@ -153,7 +154,7 @@ func (r *Reader) Next() bool {
 	binary.Read(er, binary.LittleEndian, &shapetype)
 	if er.e != nil {
 		if er.e != io.EOF {
-			r.err = fmt.Errorf("Error when reading metadata of next shape: %v")
+			r.err = fmt.Errorf("Error when reading metadata of next shape: %v", er.e)
 		} else {
 			r.err = io.EOF
 		}

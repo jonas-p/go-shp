@@ -3,6 +3,7 @@ go-shp
 
 [![Build Status](https://travis-ci.org/jonas-p/go-shp.svg?branch=master)](https://travis-ci.org/jonas-p/go-shp)
 [![Build status](https://ci.appveyor.com/api/projects/status/b64sntax4kxlouxa?svg=true)](https://ci.appveyor.com/project/fawick/go-shp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jonas-p/go-shp)](https://goreportcard.com/report/github.com/jonas-p/go-shp)
 
 Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI Shapefile technical description.
 
