@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// Writer is the type that is used to write a new shapefile.
 type Writer struct {
 	filename     string
 	shp          *os.File
@@ -23,9 +24,10 @@ type Writer struct {
 	dbfRecordLength int16
 }
 
-// Creates a new Shapefile. This also creates a corresponding
-// SHX file. It is important to use Close() when done because
-// that method writes all the headers for each file (SHP, SHX
+// Create returns a point to new Writer and the first error that was
+// encountered. In case an error occurred the returned Writer point will be nil
+// This also creates a corresponding SHX file. It is important to use Close()
+// when done because that method writes all the headers for each file (SHP, SHX
 // and DBF).
 func Create(filename string, t ShapeType) (*Writer, error) {
 	filename = filename[0 : len(filename)-3]
@@ -60,7 +62,7 @@ func (w *Writer) Write(shape Shape) int32 {
 		w.bbox.Extend(shape.BBox())
 	}
 
-	w.num += 1
+	w.num++
 	binary.Write(w.shp, binary.BigEndian, w.num)
 	w.shp.Seek(4, os.SEEK_CUR)
 	start, _ := w.shp.Seek(0, os.SEEK_CUR)
@@ -84,7 +86,7 @@ func (w *Writer) Write(shape Shape) int32 {
 	return w.num - 1
 }
 
-// Closes the Shapefile. This must be used at the end of
+// Close closes the Writer. This must be used at the end of
 // the transaction because it writes the correct headers
 // to the SHP/SHX and DBF files before closing.
 func (w *Writer) Close() {
@@ -139,7 +141,7 @@ func (w *Writer) writeDbfHeader(file *os.File) {
 	file.WriteString("\r")
 }
 
-// Set fields in the DBF. This initializes the DBF file and
+// SetFields sets field values in the DBF. This initializes the DBF file and
 // should be used prior to writing any attributes.
 func (w *Writer) SetFields(fields []Field) {
 	if w.dbf != nil {
@@ -183,10 +185,10 @@ func (w *Writer) writeEmptyRecord() {
 	binary.Write(w.dbf, binary.LittleEndian, buf)
 }
 
-// Writes value for field at row in the DBF. Row number
-// should be the same as the order the Shape was written
-// to the Shapefile. The field value corresponds the the
-// field in the splice used in SetFields.
+// WriteAttribute writes value for field into the given row in the DBF. Row
+// number should be the same as the order the Shape was written to the
+// Shapefile. The field value corresponds the the field in the splice used in
+// SetFields.
 func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	var buf []byte
 	switch reflect.TypeOf(value).Kind() {

@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
+// ShapeType is a identifier for the the type of shapes.
 type ShapeType int32
 
+// These are the possible shape types.
 const (
 	NULL        ShapeType = 0
 	POINT                 = 1
@@ -88,11 +90,11 @@ type Shape interface {
 	write(io.Writer)
 }
 
-// Shapefile NULL type
+// Null is an empty shape.
 type Null struct {
 }
 
-// Returns the bounding box of the Null feature
+// BBox Returns an empty BBox at the geometry origin.
 func (n Null) BBox() Box {
 	return Box{0.0, 0.0, 0.0, 0.0}
 }
@@ -105,12 +107,13 @@ func (n *Null) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, n)
 }
 
-// Shapefile Point type
+// Point is the shape that consists of single a geometry point.
 type Point struct {
 	X, Y float64
 }
 
-// Returns the bounding box of the Point feature
+// BBox returns the bounding box of the Point feature, i.e. an empty area at
+// the point location itself.
 func (p Point) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
@@ -132,13 +135,16 @@ func flatten(points [][]Point) []Point {
 	for _, v := range points {
 		for _, p := range v {
 			r[i] = p
-			i += 1
+			i++
 		}
 	}
 	return r
 }
 
-// Shapefile PolyLine type
+// PolyLine is a shape type that consists of an ordered set of vertices that
+// consists of one or more parts. A part is a connected sequence of two ore
+// more points. Parts may or may not be connected to another and may or may not
+// intersect each other.
 type PolyLine struct {
 	Box
 	NumParts  int32
@@ -168,7 +174,7 @@ func NewPolyLine(parts [][]Point) *PolyLine {
 	return p
 }
 
-// Returns the bounding box of the PolyLine feature
+// BBox returns the bounding box of the PolyLine feature
 func (p PolyLine) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -191,11 +197,11 @@ func (p *PolyLine) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Points)
 }
 
-// Shapefile Polygon type
-// The Polygon structure is identical to the PolyLine structure
+// Polygon is identical to the PolyLine struct. However the parts must form
+// rings that may not intersect.
 type Polygon PolyLine
 
-// Returns the bounding box of the Polygon feature
+// BBox returns the bounding box of the Polygon feature
 func (p Polygon) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -218,14 +224,14 @@ func (p *Polygon) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Points)
 }
 
-// Shapefile MultiPoint type
+// MultiPoint is the shape that consists of multiple points.
 type MultiPoint struct {
 	Box       Box
 	NumPoints int32
 	Points    []Point
 }
 
-// Returns the bounding box of the MultiPoint feature
+// BBox returns the bounding box of the MultiPoint feature
 func (p MultiPoint) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -243,7 +249,7 @@ func (p *MultiPoint) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.Points)
 }
 
-// Shapefile PointZ type
+// PointZ is a triplet of double precision coordinates plus a measure.
 type PointZ struct {
 	X float64
 	Y float64
@@ -251,7 +257,8 @@ type PointZ struct {
 	M float64
 }
 
-// Returns the bounding box of the PointZ feature
+// BBox eturns the bounding box of the PointZ feature which is an zero-sized area
+// at the X and Y coordinates of the feature.
 func (p PointZ) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
@@ -264,7 +271,9 @@ func (p *PointZ) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p)
 }
 
-// Shapefile PolyLineZ type
+// PolyLineZ is a shape which consists of one or more parts. A part is a
+// connected sequence of two or more points. Parts may or may not be connected
+// and may or may not intersect one another.
 type PolyLineZ struct {
 	Box       Box
 	NumParts  int32
@@ -277,7 +286,7 @@ type PolyLineZ struct {
 	MArray    []float64
 }
 
-// Returns the bounding box of the PolyLineZ feature
+// BBox eturns the bounding box of the PolyLineZ feature.
 func (p PolyLineZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -310,11 +319,10 @@ func (p *PolyLineZ) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile PolygonZ type
-// The PolygonZ structure is identical to the PolyLineZ structure
+// PolygonZ structure is identical to the PolyLineZ structure.
 type PolygonZ PolyLineZ
 
-// Returns the bounding box of the PolygonZ feature
+// BBox returns the bounding box of the PolygonZ feature
 func (p PolygonZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -347,7 +355,7 @@ func (p *PolygonZ) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile MultiPointZ type
+// MultiPointZ consists of one ore more PointZ.
 type MultiPointZ struct {
 	Box       Box
 	NumPoints int32
@@ -358,7 +366,7 @@ type MultiPointZ struct {
 	MArray    []float64
 }
 
-// Returns the bounding box of the MultiPointZ feature
+// BBox eturns the bounding box of the MultiPointZ feature.
 func (p MultiPointZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -386,14 +394,15 @@ func (p *MultiPointZ) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile PointM type
+// PointM is a point with a measure.
 type PointM struct {
 	X float64
 	Y float64
 	M float64
 }
 
-// Returns the bounding box of the PointM feature
+// BBox returns the bounding box of the PointM feature which is a zero-sized
+// area at the X- and Y-coordinates of the point.
 func (p PointM) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
@@ -406,7 +415,7 @@ func (p *PointM) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p)
 }
 
-// Shapefile PolyLineM type
+// PolyLineM is the polyline in which each point also has a measure.
 type PolyLineM struct {
 	Box       Box
 	NumParts  int32
@@ -417,7 +426,7 @@ type PolyLineM struct {
 	MArray    []float64
 }
 
-// Returns the bounding box of the PolyLineM feature
+// BBox returns the bounding box of the PolyLineM feature.
 func (p PolyLineM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -445,11 +454,10 @@ func (p *PolyLineM) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile PolygonM type
-// The PolygonZ structure is identical to the PolyLineZ structure
+// PolygonM structure is identical to the PolyLineZ structure.
 type PolygonM PolyLineZ
 
-// Returns the bounding box of the PolygonM feature
+// BBox returns the bounding box of the PolygonM feature.
 func (p PolygonM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -477,7 +485,7 @@ func (p *PolygonM) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile MultiPointM type
+// MultiPointM is the collection of multiple points with measures.
 type MultiPointM struct {
 	Box       Box
 	NumPoints int32
@@ -486,7 +494,7 @@ type MultiPointM struct {
 	MArray    []float64
 }
 
-// Returns the bounding box of the MultiPointM feature
+// BBox eturns the bounding box of the MultiPointM feature
 func (p MultiPointM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -509,7 +517,10 @@ func (p *MultiPointM) write(file io.Writer) {
 	binary.Write(file, binary.LittleEndian, p.MArray)
 }
 
-// Shapefile MultiPatch type
+// MultiPatch consists of a number of surfaces patches. Each surface path
+// descries a surface. The surface patches of a MultiPatch are referred to as
+// its parts, and the type of part controls how the order of vertices of an
+// MultiPatch part is interpreted.
 type MultiPatch struct {
 	Box       Box
 	NumParts  int32
@@ -523,7 +534,7 @@ type MultiPatch struct {
 	MArray    []float64
 }
 
-// Returns the bounding box of the MultiPatch feature
+// BBox returns the bounding box of the MultiPatch feature
 func (p MultiPatch) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
@@ -575,8 +586,8 @@ func (f Field) String() string {
 	return strings.TrimRight(string(f.Name[:]), "\x00")
 }
 
-// Returns a StringField that can be used in SetFields to
-// initialize the DBF file.
+// StringField returns a Field that can be used in SetFields to initialize the
+// DBF file.
 func StringField(name string, length uint8) Field {
 	// TODO: Error checking
 	field := Field{Fieldtype: 'C', Size: length}
@@ -584,27 +595,25 @@ func StringField(name string, length uint8) Field {
 	return field
 }
 
-// Returns a NumberField that can be used in SetFields to
-// initialize the DBF file.
+// NumberField returns a Field that can be used in SetFields to initialize the
+// DBF file.
 func NumberField(name string, length uint8) Field {
 	field := Field{Fieldtype: 'N', Size: length}
 	copy(field.Name[:], []byte(name))
 	return field
 }
 
-// Returns a FloatField that can be used in SetFields to
-// initialize the DBF file. Used to store floating points
-// with precision in the DBF.
+// FloatField returns a Field that can be used in SetFields to initialize the
+// DBF file. Used to store floating points with precision in the DBF.
 func FloatField(name string, length uint8, precision uint8) Field {
 	field := Field{Fieldtype: 'F', Size: length, Precision: precision}
 	copy(field.Name[:], []byte(name))
 	return field
 }
 
-// Returns a DateField that can be used in SetFields to
-// initialize the DBF file. Used to store Date strings
-// formatted as YYYYMMDD. Data wise this is the same as
-// a StringField with length 8.
+// DateField feturns a Field that can be used in SetFields to initialize the
+// DBF file. Used to store Date strings formatted as YYYYMMDD. Data wise this
+// is the same as a StringField with length 8.
 func DateField(name string) Field {
 	field := Field{Fieldtype: 'D', Size: 8}
 	copy(field.Name[:], []byte(name))

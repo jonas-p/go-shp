@@ -73,7 +73,7 @@ func getShapesZipped(prefix string, t *testing.T) (shapes []Shape) {
 func TestZipReader(t *testing.T) {
 	for prefix := range dataForReadTests {
 		t.Logf("Testing zipped reading for %s", prefix)
-		test_shapeIdentity(t, prefix, getShapesZipped)
+		testshapeIdentity(t, prefix, getShapesZipped)
 	}
 }
 

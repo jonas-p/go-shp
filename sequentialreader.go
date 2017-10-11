@@ -36,7 +36,7 @@ type SequentialReader interface {
 	Err() error
 }
 
-// Attributes() returns all attributes of the shape that sr was last advanced to.
+// Attributes returns all attributes of the shape that sr was last advanced to.
 func Attributes(sr SequentialReader) []string {
 	if sr.Err() != nil {
 		return nil

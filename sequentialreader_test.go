@@ -38,6 +38,6 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 func TestSequentialReader(t *testing.T) {
 	for prefix := range dataForReadTests {
 		t.Logf("Testing sequential read for %s", prefix)
-		test_shapeIdentity(t, prefix, getShapesSequentially)
+		testshapeIdentity(t, prefix, getShapesSequentially)
 	}
 }

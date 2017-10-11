@@ -37,7 +37,7 @@ type shapeGetterFunc func(string, *testing.T) []Shape
 
 type identityTestFunc func(*testing.T, [][]float64, []Shape)
 
-func test_Point(t *testing.T, points [][]float64, shapes []Shape) {
+func testPoint(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*Point)
 		if !ok {
@@ -49,7 +49,7 @@ func test_Point(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PolyLine(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolyLine(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLine)
 		if !ok {
@@ -63,7 +63,7 @@ func test_PolyLine(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_Polygon(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolygon(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*Polygon)
 		if !ok {
@@ -77,7 +77,7 @@ func test_Polygon(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_MultiPoint(t *testing.T, points [][]float64, shapes []Shape) {
+func testMultiPoint(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPoint)
 		if !ok {
@@ -91,7 +91,7 @@ func test_MultiPoint(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PointZ(t *testing.T, points [][]float64, shapes []Shape) {
+func testPointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PointZ)
 		if !ok {
@@ -103,7 +103,7 @@ func test_PointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PolyLineZ(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolyLineZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLineZ)
 		if !ok {
@@ -117,7 +117,7 @@ func test_PolyLineZ(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PolygonZ(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolygonZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolygonZ)
 		if !ok {
@@ -131,7 +131,7 @@ func test_PolygonZ(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_MultiPointZ(t *testing.T, points [][]float64, shapes []Shape) {
+func testMultiPointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPointZ)
 		if !ok {
@@ -145,7 +145,7 @@ func test_MultiPointZ(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PointM(t *testing.T, points [][]float64, shapes []Shape) {
+func testPointM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PointM)
 		if !ok {
@@ -157,7 +157,7 @@ func test_PointM(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PolyLineM(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolyLineM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolyLineM)
 		if !ok {
@@ -171,7 +171,7 @@ func test_PolyLineM(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_PolygonM(t *testing.T, points [][]float64, shapes []Shape) {
+func testPolygonM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*PolygonM)
 		if !ok {
@@ -185,7 +185,7 @@ func test_PolygonM(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_MultiPointM(t *testing.T, points [][]float64, shapes []Shape) {
+func testMultiPointM(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPointM)
 		if !ok {
@@ -199,7 +199,7 @@ func test_MultiPointM(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_MultiPatch(t *testing.T, points [][]float64, shapes []Shape) {
+func testMultiPatch(t *testing.T, points [][]float64, shapes []Shape) {
 	for n, s := range shapes {
 		p, ok := s.(*MultiPatch)
 		if !ok {
@@ -213,7 +213,7 @@ func test_MultiPatch(t *testing.T, points [][]float64, shapes []Shape) {
 	}
 }
 
-func test_shapeIdentity(t *testing.T, prefix string, getter shapeGetterFunc) {
+func testshapeIdentity(t *testing.T, prefix string, getter shapeGetterFunc) {
 	shapes := getter(prefix, t)
 	d := dataForReadTests[prefix]
 	if len(shapes) != d.count {
@@ -276,7 +276,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 0, 15},
 			{0, 0, 0},
 		},
-		tester: test_PolygonM,
+		tester: testPolygonM,
 		count:  1,
 	},
 	"test_files/multipointm": {
@@ -285,7 +285,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5, 50},
 			{0, 10, 75},
 		},
-		tester: test_MultiPointM,
+		tester: testMultiPointM,
 		count:  1,
 	},
 	"test_files/multipatch": {
@@ -321,7 +321,7 @@ var dataForReadTests = map[string]testCaseData{
 			{10, 0, 10},
 			{0, 0, 10},
 		},
-		tester: test_MultiPatch,
+		tester: testMultiPatch,
 		count:  1,
 	},
 	"test_files/point": {
@@ -330,7 +330,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5},
 			{0, 10},
 		},
-		tester: test_Point,
+		tester: testPoint,
 		count:  3,
 	},
 	"test_files/polyline": {
@@ -342,7 +342,7 @@ var dataForReadTests = map[string]testCaseData{
 			{20, 20},
 			{25, 25},
 		},
-		tester: test_PolyLine,
+		tester: testPolyLine,
 		count:  2,
 	},
 	"test_files/polygon": {
@@ -353,7 +353,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 0},
 			{0, 0},
 		},
-		tester: test_Polygon,
+		tester: testPolygon,
 		count:  1,
 	},
 	"test_files/multipoint": {
@@ -362,7 +362,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5},
 			{0, 10},
 		},
-		tester: test_MultiPoint,
+		tester: testMultiPoint,
 		count:  1,
 	},
 	"test_files/pointz": {
@@ -371,7 +371,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5, 50},
 			{0, 10, 75},
 		},
-		tester: test_PointZ,
+		tester: testPointZ,
 		count:  3,
 	},
 	"test_files/polylinez": {
@@ -383,7 +383,7 @@ var dataForReadTests = map[string]testCaseData{
 			{20, 20, 20},
 			{25, 25, 25},
 		},
-		tester: test_PolyLineZ,
+		tester: testPolyLineZ,
 		count:  2,
 	},
 	"test_files/polygonz": {
@@ -394,7 +394,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 0, 15},
 			{0, 0, 0},
 		},
-		tester: test_PolygonZ,
+		tester: testPolygonZ,
 		count:  1,
 	},
 	"test_files/multipointz": {
@@ -403,7 +403,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5, 50},
 			{0, 10, 75},
 		},
-		tester: test_MultiPointZ,
+		tester: testMultiPointZ,
 		count:  1,
 	},
 	"test_files/pointm": {
@@ -412,7 +412,7 @@ var dataForReadTests = map[string]testCaseData{
 			{5, 5, 50},
 			{0, 10, 75},
 		},
-		tester: test_PointM,
+		tester: testPointM,
 		count:  3,
 	},
 	"test_files/polylinem": {
@@ -424,59 +424,59 @@ var dataForReadTests = map[string]testCaseData{
 			{20, 20, 20},
 			{25, 25, 25},
 		},
-		tester: test_PolyLineM,
+		tester: testPolyLineM,
 		count:  2,
 	},
 }
 
 func TestReadPoint(t *testing.T) {
-	test_shapeIdentity(t, "test_files/point", getShapesFromFile)
+	testshapeIdentity(t, "test_files/point", getShapesFromFile)
 }
 
 func TestReadPolyLine(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polyline", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polyline", getShapesFromFile)
 }
 
 func TestReadPolygon(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polygon", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polygon", getShapesFromFile)
 }
 
 func TestReadMultiPoint(t *testing.T) {
-	test_shapeIdentity(t, "test_files/multipoint", getShapesFromFile)
+	testshapeIdentity(t, "test_files/multipoint", getShapesFromFile)
 }
 
 func TestReadPointZ(t *testing.T) {
-	test_shapeIdentity(t, "test_files/pointz", getShapesFromFile)
+	testshapeIdentity(t, "test_files/pointz", getShapesFromFile)
 }
 
 func TestReadPolyLineZ(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polylinez", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polylinez", getShapesFromFile)
 }
 
 func TestReadPolygonZ(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polygonz", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polygonz", getShapesFromFile)
 }
 
 func TestReadMultiPointZ(t *testing.T) {
-	test_shapeIdentity(t, "test_files/multipointz", getShapesFromFile)
+	testshapeIdentity(t, "test_files/multipointz", getShapesFromFile)
 }
 
 func TestReadPointM(t *testing.T) {
-	test_shapeIdentity(t, "test_files/pointm", getShapesFromFile)
+	testshapeIdentity(t, "test_files/pointm", getShapesFromFile)
 }
 
 func TestReadPolyLineM(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polylinem", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polylinem", getShapesFromFile)
 }
 
 func TestReadPolygonM(t *testing.T) {
-	test_shapeIdentity(t, "test_files/polygonm", getShapesFromFile)
+	testshapeIdentity(t, "test_files/polygonm", getShapesFromFile)
 }
 
 func TestReadMultiPointM(t *testing.T) {
-	test_shapeIdentity(t, "test_files/multipointm", getShapesFromFile)
+	testshapeIdentity(t, "test_files/multipointm", getShapesFromFile)
 }
 
 func TestReadMultiPatch(t *testing.T) {
-	test_shapeIdentity(t, "test_files/multipatch", getShapesFromFile)
+	testshapeIdentity(t, "test_files/multipatch", getShapesFromFile)
 }

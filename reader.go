@@ -44,6 +44,7 @@ func Open(filename string) (*Reader, error) {
 	return s, nil
 }
 
+// BBox returns the bounding box of the shapefile.
 func (r *Reader) BBox() Box {
 	return r.bbox
 }
