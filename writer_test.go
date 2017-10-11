@@ -71,10 +71,10 @@ func TestWritePolyLine(t *testing.T) {
 		NumParts:  2,
 		NumPoints: 4,
 		Parts:     []int32{0, 2},
-		Points: []Point{Point{X: 0, Y: 0},
-			Point{X: 5, Y: 5},
-			Point{X: 10, Y: 10},
-			Point{X: 15, Y: 15},
+		Points: []Point{{X: 0, Y: 0},
+			{X: 5, Y: 5},
+			{X: 10, Y: 10},
+			{X: 15, Y: 15},
 		},
 	}
 	if !reflect.DeepEqual(l, lWant) {

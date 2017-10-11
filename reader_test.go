@@ -268,7 +268,7 @@ type testCaseData struct {
 }
 
 var dataForReadTests = map[string]testCaseData{
-	"test_files/polygonm": testCaseData{
+	"test_files/polygonm": {
 		points: [][]float64{
 			{0, 0, 0},
 			{0, 5, 5},
@@ -279,7 +279,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PolygonM,
 		count:  1,
 	},
-	"test_files/multipointm": testCaseData{
+	"test_files/multipointm": {
 		points: [][]float64{
 			{10, 10, 100},
 			{5, 5, 50},
@@ -288,7 +288,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_MultiPointM,
 		count:  1,
 	},
-	"test_files/multipatch": testCaseData{
+	"test_files/multipatch": {
 		points: [][]float64{
 			{0, 0, 0},
 			{10, 0, 0},
@@ -324,7 +324,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_MultiPatch,
 		count:  1,
 	},
-	"test_files/point": testCaseData{
+	"test_files/point": {
 		points: [][]float64{
 			{10, 10},
 			{5, 5},
@@ -333,7 +333,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_Point,
 		count:  3,
 	},
-	"test_files/polyline": testCaseData{
+	"test_files/polyline": {
 		points: [][]float64{
 			{0, 0},
 			{5, 5},
@@ -345,7 +345,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PolyLine,
 		count:  2,
 	},
-	"test_files/polygon": testCaseData{
+	"test_files/polygon": {
 		points: [][]float64{
 			{0, 0},
 			{0, 5},
@@ -356,7 +356,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_Polygon,
 		count:  1,
 	},
-	"test_files/multipoint": testCaseData{
+	"test_files/multipoint": {
 		points: [][]float64{
 			{10, 10},
 			{5, 5},
@@ -365,7 +365,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_MultiPoint,
 		count:  1,
 	},
-	"test_files/pointz": testCaseData{
+	"test_files/pointz": {
 		points: [][]float64{
 			{10, 10, 100},
 			{5, 5, 50},
@@ -374,7 +374,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PointZ,
 		count:  3,
 	},
-	"test_files/polylinez": testCaseData{
+	"test_files/polylinez": {
 		points: [][]float64{
 			{0, 0, 0},
 			{5, 5, 5},
@@ -386,7 +386,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PolyLineZ,
 		count:  2,
 	},
-	"test_files/polygonz": testCaseData{
+	"test_files/polygonz": {
 		points: [][]float64{
 			{0, 0, 0},
 			{0, 5, 5},
@@ -397,7 +397,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PolygonZ,
 		count:  1,
 	},
-	"test_files/multipointz": testCaseData{
+	"test_files/multipointz": {
 		points: [][]float64{
 			{10, 10, 100},
 			{5, 5, 50},
@@ -406,7 +406,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_MultiPointZ,
 		count:  1,
 	},
-	"test_files/pointm": testCaseData{
+	"test_files/pointm": {
 		points: [][]float64{
 			{10, 10, 100},
 			{5, 5, 50},
@@ -415,7 +415,7 @@ var dataForReadTests = map[string]testCaseData{
 		tester: test_PointM,
 		count:  3,
 	},
-	"test_files/polylinem": testCaseData{
+	"test_files/polylinem": {
 		points: [][]float64{
 			{0, 0, 0},
 			{5, 5, 5},
