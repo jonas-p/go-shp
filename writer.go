@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -103,22 +104,22 @@ func (w *Writer) Close() {
 }
 
 // Writes SHP/SHX headers to specified file.
-func (w *Writer) writeHeader(file *os.File) {
-	filelength, _ := file.Seek(0, os.SEEK_END)
+func (w *Writer) writeHeader(ws io.WriteSeeker) {
+	filelength, _ := ws.Seek(0, os.SEEK_END)
 	if filelength == 0 {
 		filelength = 100
 	}
-	file.Seek(0, os.SEEK_SET)
+	ws.Seek(0, os.SEEK_SET)
 	// file code
-	binary.Write(file, binary.BigEndian, []int32{9994, 0, 0, 0, 0, 0})
+	binary.Write(ws, binary.BigEndian, []int32{9994, 0, 0, 0, 0, 0})
 	// file length
-	binary.Write(file, binary.BigEndian, int32(filelength/2))
+	binary.Write(ws, binary.BigEndian, int32(filelength/2))
 	// version and shape type
-	binary.Write(file, binary.LittleEndian, []int32{1000, int32(w.GeometryType)})
+	binary.Write(ws, binary.LittleEndian, []int32{1000, int32(w.GeometryType)})
 	// bounding box
-	binary.Write(file, binary.LittleEndian, w.bbox)
+	binary.Write(ws, binary.LittleEndian, w.bbox)
 	// elevation, measure
-	binary.Write(file, binary.LittleEndian, []float64{0.0, 0.0, 0.0, 0.0})
+	binary.Write(ws, binary.LittleEndian, []float64{0.0, 0.0, 0.0, 0.0})
 }
 
 // Write DBF header.
@@ -213,4 +214,9 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	}
 	w.dbf.Seek(seekTo, os.SEEK_SET)
 	binary.Write(w.dbf, binary.LittleEndian, buf)
+}
+
+// BBox returns the bounding box of the Writer.
+func (w *Writer) BBox() Box {
+	return w.bbox
 }
