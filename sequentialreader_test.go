@@ -30,7 +30,7 @@ func getShapesSequentially(prefix string, t *testing.T) (shapes []Shape) {
 	}
 
 	if err := sr.Close(); err != nil {
-		t.Error("Could not close sequential reader: %v", err)
+		t.Errorf("Could not close sequential reader: %v", err)
 	}
 	return shapes
 }

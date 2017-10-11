@@ -184,17 +184,17 @@ func skipOrDownloadNaturalEarth(t *testing.T, p string) {
 			t.Logf("Downloading %s", u)
 			w, err := os.Create(p)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not create %q: %v", p, err)
 			}
 			defer w.Close()
 			resp, err := http.Get(u)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not download %q: %v", u, err)
 			}
 			defer resp.Body.Close()
 			_, err = io.Copy(w, resp.Body)
 			if err != nil {
-				t.Fatalf("Could not download: %p: %v", p, err)
+				t.Fatalf("Could not download %q: %v", u, err)
 			}
 			t.Logf("Download complete")
 		}
