@@ -103,7 +103,7 @@ func (w *Writer) Close() {
 	w.dbf.Close()
 }
 
-// Writes SHP/SHX headers to specified file.
+// writeHeader wrires SHP/SHX headers to ws.
 func (w *Writer) writeHeader(ws io.WriteSeeker) {
 	filelength, _ := ws.Seek(0, os.SEEK_END)
 	if filelength == 0 {
@@ -122,24 +122,24 @@ func (w *Writer) writeHeader(ws io.WriteSeeker) {
 	binary.Write(ws, binary.LittleEndian, []float64{0.0, 0.0, 0.0, 0.0})
 }
 
-// Write DBF header.
-func (w *Writer) writeDbfHeader(file *os.File) {
-	file.Seek(0, 0)
+// writeDbfHeader writes a DBF header to ws.
+func (w *Writer) writeDbfHeader(ws io.WriteSeeker) {
+	ws.Seek(0, 0)
 	// version, year (YEAR-1990), month, day
-	binary.Write(file, binary.LittleEndian, []byte{3, 24, 5, 3})
+	binary.Write(ws, binary.LittleEndian, []byte{3, 24, 5, 3})
 	// number of records
-	binary.Write(file, binary.LittleEndian, w.num)
+	binary.Write(ws, binary.LittleEndian, w.num)
 	// header length, record length
-	binary.Write(file, binary.LittleEndian, []int16{w.dbfHeaderLength, w.dbfRecordLength})
+	binary.Write(ws, binary.LittleEndian, []int16{w.dbfHeaderLength, w.dbfRecordLength})
 	// padding
-	binary.Write(file, binary.LittleEndian, make([]byte, 20))
+	binary.Write(ws, binary.LittleEndian, make([]byte, 20))
 
 	for _, field := range w.dbfFields {
-		binary.Write(file, binary.LittleEndian, field)
+		binary.Write(ws, binary.LittleEndian, field)
 	}
 
 	// end with return
-	file.WriteString("\r")
+	ws.Write([]byte("\r"))
 }
 
 // SetFields sets field values in the DBF. This initializes the DBF file and
