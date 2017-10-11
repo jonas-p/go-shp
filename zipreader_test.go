@@ -136,9 +136,7 @@ func TestZipReaderAttribute(t *testing.T) {
 	if len(fsl) != len(fsz) {
 		t.Fatalf("Number of attributes do not match: Wanted %d, got %d", len(fsl), len(fsz))
 	}
-	sum := 0
 	for i := range fsl {
-		sum += int(fsz[i].Size)
 		if fsl[i] != fsz[i] {
 			t.Fatalf("Attribute %d (%s) does not match (%s)", i, fsl[i], fsz[i])
 		}
