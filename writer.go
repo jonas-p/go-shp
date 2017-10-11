@@ -40,8 +40,8 @@ func Create(filename string, t ShapeType) (*Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	shp.Seek(100, os.SEEK_SET)
-	shx.Seek(100, os.SEEK_SET)
+	shp.Seek(100, io.SeekStart)
+	shx.Seek(100, io.SeekStart)
 	w := &Writer{
 		filename:     filename,
 		shp:          shp,
@@ -65,15 +65,15 @@ func (w *Writer) Write(shape Shape) int32 {
 
 	w.num++
 	binary.Write(w.shp, binary.BigEndian, w.num)
-	w.shp.Seek(4, os.SEEK_CUR)
-	start, _ := w.shp.Seek(0, os.SEEK_CUR)
+	w.shp.Seek(4, io.SeekCurrent)
+	start, _ := w.shp.Seek(0, io.SeekCurrent)
 	binary.Write(w.shp, binary.LittleEndian, w.GeometryType)
 	shape.write(w.shp)
-	finish, _ := w.shp.Seek(0, os.SEEK_CUR)
+	finish, _ := w.shp.Seek(0, io.SeekCurrent)
 	length := int32(math.Floor((float64(finish) - float64(start)) / 2.0))
-	w.shp.Seek(start-4, os.SEEK_SET)
+	w.shp.Seek(start-4, io.SeekStart)
 	binary.Write(w.shp, binary.BigEndian, length)
-	w.shp.Seek(finish, os.SEEK_SET)
+	w.shp.Seek(finish, io.SeekStart)
 
 	// write shx
 	binary.Write(w.shx, binary.BigEndian, int32((start-8)/2))
@@ -105,11 +105,11 @@ func (w *Writer) Close() {
 
 // writeHeader wrires SHP/SHX headers to ws.
 func (w *Writer) writeHeader(ws io.WriteSeeker) {
-	filelength, _ := ws.Seek(0, os.SEEK_END)
+	filelength, _ := ws.Seek(0, io.SeekEnd)
 	if filelength == 0 {
 		filelength = 100
 	}
-	ws.Seek(0, os.SEEK_SET)
+	ws.Seek(0, io.SeekStart)
 	// file code
 	binary.Write(ws, binary.BigEndian, []int32{9994, 0, 0, 0, 0, 0})
 	// file length
@@ -180,7 +180,7 @@ func (w *Writer) SetFields(fields []Field) {
 // dbfRecordLength number of bytes. The first byte is a
 // space that indicates a new record.
 func (w *Writer) writeEmptyRecord() {
-	w.dbf.Seek(0, os.SEEK_END)
+	w.dbf.Seek(0, io.SeekEnd)
 	buf := make([]byte, w.dbfRecordLength)
 	buf[0] = ' '
 	binary.Write(w.dbf, binary.LittleEndian, buf)
@@ -212,7 +212,7 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	for n := 0; n < field; n++ {
 		seekTo += int64(w.dbfFields[n].Size)
 	}
-	w.dbf.Seek(seekTo, os.SEEK_SET)
+	w.dbf.Seek(seekTo, io.SeekStart)
 	binary.Write(w.dbf, binary.LittleEndian, buf)
 }
 

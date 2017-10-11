@@ -53,7 +53,7 @@ func (r *Reader) BBox() Box {
 // fill out GeometryType, filelength and bbox.
 func (r *Reader) readHeaders() {
 	// don't trust the the filelength in the header
-	r.filelength, _ = r.shp.Seek(0, os.SEEK_END)
+	r.filelength, _ = r.shp.Seek(0, io.SeekEnd)
 
 	var filelength int32
 	r.shp.Seek(24, 0)
@@ -141,7 +141,7 @@ func newShape(shapetype ShapeType) Shape {
 // returns false when the reader has reached the end of the
 // file.
 func (r *Reader) Next() bool {
-	cur, _ := r.shp.Seek(0, os.SEEK_CUR)
+	cur, _ := r.shp.Seek(0, io.SeekCurrent)
 	if cur >= r.filelength {
 		return false
 	}
@@ -187,12 +187,12 @@ func (r *Reader) openDbf() (err error) {
 	}
 
 	// read header
-	r.dbf.Seek(4, os.SEEK_SET)
+	r.dbf.Seek(4, io.SeekStart)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfNumRecords)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfHeaderLength)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfRecordLength)
 
-	r.dbf.Seek(20, os.SEEK_CUR) // skip padding
+	r.dbf.Seek(20, io.SeekCurrent) // skip padding
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
 	r.dbfFields = make([]Field, numFields)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
@@ -228,7 +228,7 @@ func (r *Reader) ReadAttribute(row int, field int) string {
 	for n := 0; n < field; n++ {
 		seekTo += int64(r.dbfFields[n].Size)
 	}
-	r.dbf.Seek(seekTo, os.SEEK_SET)
+	r.dbf.Seek(seekTo, io.SeekStart)
 	buf := make([]byte, r.dbfFields[field].Size)
 	r.dbf.Read(buf)
 	return strings.Trim(string(buf[:]), " ")
