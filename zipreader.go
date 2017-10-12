@@ -68,12 +68,13 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	return zr, nil
 }
 
-// OpenZipWithName opens a shape file that is contained in a ZIP achive. The
-// parameter name name of the shape file.
-// It must be a relative path: it must not start with a drive
-// letter (e.g. C:) or leading slash, and only forward slashes
-// are allowed.
-func OpenZipWithName(zipFilePath string, name string) (*ZipReader, error) {
+// OpenShapeFromZip opens a shape file that is contained in a ZIP achive. The
+// parameter name is name of the shape file.
+// The name of the shapefile must be a relative path: it must not start with a
+// drive letter (e.g. C:) or leading slash, and only forward slashes are
+// allowed. These rules are the same as in
+// https://golang.org/pkg/archive/zip/#FileHeader.
+func OpenShapeFromZip(zipFilePath string, name string) (*ZipReader, error) {
 	z, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		return nil, err
