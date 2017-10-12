@@ -79,7 +79,7 @@ func shapesInZip(z *zip.ReadCloser) []*zip.File {
 	return shapeFiles
 }
 
-// OpenShapeFromZip opens a shape file that is contained in a ZIP achive. The
+// OpenShapeFromZip opens a shape file that is contained in a ZIP archive. The
 // parameter name is name of the shape file.
 // The name of the shapefile must be a relative path: it must not start with a
 // drive letter (e.g. C:) or leading slash, and only forward slashes are
