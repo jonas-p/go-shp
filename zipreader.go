@@ -26,20 +26,6 @@ func openFromZIP(z *zip.ReadCloser, name string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("No such file in archive: %s", name)
 }
 
-func countAndFirstShape(z *zip.ReadCloser) (int, string) {
-	count := 0
-	firstShape := ""
-	for _, f := range z.File {
-		if strings.HasSuffix(f.Name, ".shp") {
-			count++
-			if firstShape == "" {
-				firstShape = f.Name
-			}
-		}
-	}
-	return count, firstShape
-}
-
 // OpenZip opens a ZIP file that contains a single shapefile.
 func OpenZip(zipFilePath string) (*ZipReader, error) {
 	z, err := zip.OpenReader(zipFilePath)
@@ -49,23 +35,48 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	zr := &ZipReader{
 		z: z,
 	}
-	count, first := countAndFirstShape(z)
-	if count == 0 {
+	shapeFiles := shapesInZip(z)
+	if len(shapeFiles) == 0 {
 		return nil, fmt.Errorf("archive does not contain a .shp file")
 	}
-	if count > 1 {
+	if len(shapeFiles) > 1 {
 		return nil, fmt.Errorf("archive does contain multiple .shp files")
 	}
-	prefix := strings.TrimSuffix(first, path.Ext(first))
 
-	shp, err := openFromZIP(zr.z, prefix+".shp")
+	shp, err := openFromZIP(zr.z, shapeFiles[0].Name)
 	if err != nil {
 		return nil, err
 	}
+	withoutExt := strings.TrimSuffix(shapeFiles[0].Name, ".shp")
 	// dbf is optional, so no error checking here
-	dbf, _ := openFromZIP(zr.z, prefix+".dbf")
+	dbf, _ := openFromZIP(zr.z, withoutExt+".dbf")
 	zr.sr = SequentialReaderFromExt(shp, dbf)
 	return zr, nil
+}
+
+// ShapesInZip returns a string-slice with the names (i.e. relatives paths in
+// achive file tree) of all shapes that are in the ZIP archive at zipFilePath.
+func ShapesInZip(zipFilePath string) ([]string, error) {
+	var names []string
+	z, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return nil, err
+	}
+	shapeFiles := shapesInZip(z)
+	for i := range shapeFiles {
+		names = append(names, shapeFiles[i].Name)
+	}
+	return names, nil
+}
+
+func shapesInZip(z *zip.ReadCloser) []*zip.File {
+	var shapeFiles []*zip.File
+	for _, f := range z.File {
+		if strings.HasSuffix(f.Name, ".shp") {
+			shapeFiles = append(shapeFiles, f)
+		}
+	}
+	return shapeFiles
 }
 
 // OpenShapeFromZip opens a shape file that is contained in a ZIP achive. The
