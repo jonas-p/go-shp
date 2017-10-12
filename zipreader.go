@@ -55,7 +55,7 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 }
 
 // ShapesInZip returns a string-slice with the names (i.e. relatives paths in
-// achive file tree) of all shapes that are in the ZIP archive at zipFilePath.
+// archive file tree) of all shapes that are in the ZIP archive at zipFilePath.
 func ShapesInZip(zipFilePath string) ([]string, error) {
 	var names []string
 	z, err := zip.OpenReader(zipFilePath)
