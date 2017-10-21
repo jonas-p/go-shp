@@ -13,16 +13,22 @@ import (
 // Writer is the type that is used to write a new shapefile.
 type Writer struct {
 	filename     string
-	shp          *os.File
-	shx          *os.File
+	shp          writeSeekCloser
+	shx          writeSeekCloser
 	GeometryType ShapeType
 	num          int32
 	bbox         Box
 
-	dbf             *os.File
+	dbf             writeSeekCloser
 	dbfFields       []Field
 	dbfHeaderLength int16
 	dbfRecordLength int16
+}
+
+type writeSeekCloser interface {
+	io.Writer
+	io.Seeker
+	io.Closer
 }
 
 // Create returns a point to new Writer and the first error that was
@@ -188,7 +194,7 @@ func (w *Writer) writeEmptyRecord() {
 
 // WriteAttribute writes value for field into the given row in the DBF. Row
 // number should be the same as the order the Shape was written to the
-// Shapefile. The field value corresponds the the field in the splice used in
+// Shapefile. The field value corresponds the the field in the slice used in
 // SetFields.
 func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	var buf []byte
