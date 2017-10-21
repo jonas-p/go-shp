@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 	"strings"
@@ -19,17 +18,23 @@ type Reader struct {
 	bbox         Box
 	err          error
 
-	shp        *os.File
+	shp        readSeekCloser
 	shape      Shape
 	num        int32
 	filename   string
 	filelength int64
 
-	dbf             *os.File
+	dbf             readSeekCloser
 	dbfFields       []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
+}
+
+type readSeekCloser interface {
+	io.Reader
+	io.Seeker
+	io.Closer
 }
 
 // Open opens a Shapefile for reading.
@@ -100,46 +105,45 @@ func (r *Reader) Attribute(n int) string {
 }
 
 // newShape creates a new shape with a given type.
-func newShape(shapetype ShapeType) Shape {
+func newShape(shapetype ShapeType) (Shape, error) {
 	switch shapetype {
 	case NULL:
-		return new(Null)
+		return new(Null), nil
 	case POINT:
-		return new(Point)
+		return new(Point), nil
 	case POLYLINE:
-		return new(PolyLine)
+		return new(PolyLine), nil
 	case POLYGON:
-		return new(Polygon)
+		return new(Polygon), nil
 	case MULTIPOINT:
-		return new(MultiPoint)
+		return new(MultiPoint), nil
 	case POINTZ:
-		return new(PointZ)
+		return new(PointZ), nil
 	case POLYLINEZ:
-		return new(PolyLineZ)
+		return new(PolyLineZ), nil
 	case POLYGONZ:
-		return new(PolygonZ)
+		return new(PolygonZ), nil
 	case MULTIPOINTZ:
-		return new(MultiPointZ)
+		return new(MultiPointZ), nil
 	case POINTM:
-		return new(PointM)
+		return new(PointM), nil
 	case POLYLINEM:
-		return new(PolyLineM)
+		return new(PolyLineM), nil
 	case POLYGONM:
-		return new(PolygonM)
+		return new(PolygonM), nil
 	case MULTIPOINTM:
-		return new(MultiPointM)
+		return new(MultiPointM), nil
 	case MULTIPATCH:
-		return new(MultiPatch)
+		return new(MultiPatch), nil
 	default:
-		log.Fatal("Unsupported shape type:", shapetype)
-		return nil
+		return nil, fmt.Errorf("Unsupported shape type: %v", shapetype)
 	}
 }
 
 // Next reads in the next Shape in the Shapefile, which
 // will then be available through the Shape method. It
 // returns false when the reader has reached the end of the
-// file.
+// file or encounters an error.
 func (r *Reader) Next() bool {
 	cur, _ := r.shp.Seek(0, io.SeekCurrent)
 	if cur >= r.filelength {
@@ -161,7 +165,12 @@ func (r *Reader) Next() bool {
 		return false
 	}
 
-	r.shape = newShape(shapetype)
+	var err error
+	r.shape, err = newShape(shapetype)
+	if err != nil {
+		r.err = fmt.Errorf("Error decoding shape type: %v", err)
+		return false
+	}
 	r.shape.read(er)
 	if er.e != nil {
 		r.err = fmt.Errorf("Error while reading next shape: %v", er.e)
