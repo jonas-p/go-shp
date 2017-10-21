@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"reflect"
 	"strconv"
 )
 
@@ -198,16 +197,16 @@ func (w *Writer) writeEmptyRecord() {
 // SetFields.
 func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	var buf []byte
-	switch reflect.TypeOf(value).Kind() {
-	case reflect.Int:
-		buf = []byte(strconv.Itoa(value.(int)))
-	case reflect.Float64:
+	switch v := value.(type) {
+	case int:
+		buf = []byte(strconv.Itoa(v))
+	case float64:
 		precision := w.dbfFields[field].Precision
-		buf = []byte(strconv.FormatFloat(value.(float64), 'f', int(precision), 64))
-	case reflect.String:
-		buf = []byte(value.(string))
+		buf = []byte(strconv.FormatFloat(v, 'f', int(precision), 64))
+	case string:
+		buf = []byte(v)
 	default:
-		log.Fatal("Unsupported value type:", reflect.TypeOf(value))
+		log.Fatalf("Unsupported value type: %T", v)
 	}
 
 	if w.dbf == nil {
