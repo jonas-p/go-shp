@@ -1,6 +1,11 @@
 package shp
 
-import "testing"
+import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"testing"
+)
 
 func pointsEqual(a, b []float64) bool {
 	if len(a) != len(b) {
@@ -479,4 +484,44 @@ func TestReadMultiPointM(t *testing.T) {
 
 func TestReadMultiPatch(t *testing.T) {
 	testshapeIdentity(t, "test_files/multipatch", getShapesFromFile)
+}
+
+func newReadSeekCloser(b []byte) readSeekCloser {
+	return struct {
+		io.Closer
+		io.ReadSeeker
+	}{
+		ioutil.NopCloser(nil),
+		bytes.NewReader(b),
+	}
+}
+
+func TestReadInvalidShapeType(t *testing.T) {
+	record := []byte{
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		255, 255, 255, 255, // shape type
+	}
+
+	tests := []struct {
+		r interface {
+			Next() bool
+			Err() error
+		}
+		name string
+	}{
+		{&Reader{shp: newReadSeekCloser(record), filelength: int64(len(record))}, "reader"},
+		{&seqReader{shp: newReadSeekCloser(record), filelength: int64(len(record))}, "seqReader"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.r.Next() {
+				t.Fatal("read unsupported shape type without stopping")
+			}
+			if test.r.Err() == nil {
+				t.Fatal("read unsupported shape type without error")
+			}
+		})
+	}
 }

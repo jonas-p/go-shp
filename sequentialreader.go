@@ -146,7 +146,12 @@ func (sr *seqReader) Next() bool {
 		return false
 	}
 	sr.num = num
-	sr.shape = newShape(shapetype)
+	var err error
+	sr.shape, err = newShape(shapetype)
+	if err != nil {
+		sr.err = fmt.Errorf("Error decoding shape type: %v", err)
+		return false
+	}
 	sr.shape.read(er)
 	switch {
 	case er.e == io.EOF:
