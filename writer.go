@@ -6,23 +6,28 @@ import (
 	"log"
 	"math"
 	"os"
-	"reflect"
 	"strconv"
 )
 
 // Writer is the type that is used to write a new shapefile.
 type Writer struct {
 	filename     string
-	shp          *os.File
-	shx          *os.File
+	shp          writeSeekCloser
+	shx          writeSeekCloser
 	GeometryType ShapeType
 	num          int32
 	bbox         Box
 
-	dbf             *os.File
+	dbf             writeSeekCloser
 	dbfFields       []Field
 	dbfHeaderLength int16
 	dbfRecordLength int16
+}
+
+type writeSeekCloser interface {
+	io.Writer
+	io.Seeker
+	io.Closer
 }
 
 // Create returns a point to new Writer and the first error that was
@@ -188,20 +193,20 @@ func (w *Writer) writeEmptyRecord() {
 
 // WriteAttribute writes value for field into the given row in the DBF. Row
 // number should be the same as the order the Shape was written to the
-// Shapefile. The field value corresponds the the field in the splice used in
+// Shapefile. The field value corresponds to the field in the slice used in
 // SetFields.
 func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	var buf []byte
-	switch reflect.TypeOf(value).Kind() {
-	case reflect.Int:
-		buf = []byte(strconv.Itoa(value.(int)))
-	case reflect.Float64:
+	switch v := value.(type) {
+	case int:
+		buf = []byte(strconv.Itoa(v))
+	case float64:
 		precision := w.dbfFields[field].Precision
-		buf = []byte(strconv.FormatFloat(value.(float64), 'f', int(precision), 64))
-	case reflect.String:
-		buf = []byte(value.(string))
+		buf = []byte(strconv.FormatFloat(v, 'f', int(precision), 64))
+	case string:
+		buf = []byte(v)
 	default:
-		log.Fatal("Unsupported value type:", reflect.TypeOf(value))
+		log.Fatalf("Unsupported value type: %T", v)
 	}
 
 	if w.dbf == nil {

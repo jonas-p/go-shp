@@ -1,6 +1,8 @@
 package shp
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -89,4 +91,62 @@ func TestWritePolyLine(t *testing.T) {
 		t.Error("Number of shapes read was wrong")
 	}
 	testPolyLine(t, pointsToFloats(flatten(points)), shapes)
+}
+
+type seekTracker struct {
+	io.Writer
+	offset int64
+}
+
+func (s *seekTracker) Seek(offset int64, whence int) (int64, error) {
+	s.offset = offset
+	return s.offset, nil
+}
+
+func (s *seekTracker) Close() error {
+	return nil
+}
+
+func TestWriteAttribute(t *testing.T) {
+	buf := new(bytes.Buffer)
+	s := &seekTracker{Writer: buf}
+	w := Writer{
+		dbf: s,
+		dbfFields: []Field{
+			StringField("A_STRING", 6),
+			FloatField("A_FLOAT", 8, 4),
+			NumberField("AN_INT", 4),
+		},
+		dbfRecordLength: 100,
+	}
+
+	tests := []struct {
+		name       string
+		row        int
+		field      int
+		data       interface{}
+		wantOffset int64
+		wantData   string
+	}{
+		{"string-0", 0, 0, "test", 1, "test"},
+		{"string-3", 3, 0, "things", 301, "things"},
+		{"float-0", 0, 1, 123.44, 7, "123.4400"},
+		{"int-0", 0, 2, 4242, 15, "4242"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			buf.Reset()
+			s.offset = 0
+
+			w.WriteAttribute(test.row, test.field, test.data)
+
+			if buf.String() != test.wantData {
+				t.Errorf("got data: %v, want: %v", buf.String(), test.wantData)
+			}
+			if s.offset != test.wantOffset {
+				t.Errorf("got seek offset: %v, want: %v", s.offset, test.wantOffset)
+			}
+		})
+	}
 }
