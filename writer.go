@@ -193,7 +193,7 @@ func (w *Writer) writeEmptyRecord() {
 
 // WriteAttribute writes value for field into the given row in the DBF. Row
 // number should be the same as the order the Shape was written to the
-// Shapefile. The field value corresponds the the field in the slice used in
+// Shapefile. The field value corresponds to the field in the slice used in
 // SetFields.
 func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	var buf []byte

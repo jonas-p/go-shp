@@ -93,25 +93,23 @@ func TestWritePolyLine(t *testing.T) {
 	testPolyLine(t, pointsToFloats(flatten(points)), shapes)
 }
 
-type seekCloseTracker struct {
+type seekTracker struct {
 	io.Writer
 	offset int64
-	closed bool
 }
 
-func (s *seekCloseTracker) Seek(offset int64, whence int) (int64, error) {
+func (s *seekTracker) Seek(offset int64, whence int) (int64, error) {
 	s.offset = offset
-	return 0, nil
+	return s.offset, nil
 }
 
-func (s *seekCloseTracker) Close() error {
-	s.closed = true
+func (s *seekTracker) Close() error {
 	return nil
 }
 
 func TestWriteAttribute(t *testing.T) {
 	buf := new(bytes.Buffer)
-	s := &seekCloseTracker{Writer: buf}
+	s := &seekTracker{Writer: buf}
 	w := Writer{
 		dbf: s,
 		dbfFields: []Field{
