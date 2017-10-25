@@ -2,8 +2,9 @@ package shp
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 	"strconv"
@@ -149,15 +150,15 @@ func (w *Writer) writeDbfHeader(ws io.WriteSeeker) {
 
 // SetFields sets field values in the DBF. This initializes the DBF file and
 // should be used prior to writing any attributes.
-func (w *Writer) SetFields(fields []Field) {
+func (w *Writer) SetFields(fields []Field) error {
 	if w.dbf != nil {
-		log.Fatal("Cannot set fields in existing dbf")
+		return errors.New("Cannot set fields in existing dbf")
 	}
 
 	var err error
 	w.dbf, err = os.Create(w.filename + "dbf")
 	if err != nil {
-		log.Fatal("Failed to open " + w.filename + ".dbf")
+		return fmt.Errorf("Failed to open %s.dbf: %v", w.filename, err)
 	}
 	w.dbfFields = fields
 
@@ -178,6 +179,7 @@ func (w *Writer) SetFields(fields []Field) {
 	for n := int32(0); n < w.num; n++ {
 		w.writeEmptyRecord()
 	}
+	return nil
 }
 
 // Writes an empty record to the end of the DBF. This
@@ -195,7 +197,7 @@ func (w *Writer) writeEmptyRecord() {
 // number should be the same as the order the Shape was written to the
 // Shapefile. The field value corresponds to the field in the slice used in
 // SetFields.
-func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
+func (w *Writer) WriteAttribute(row int, field int, value interface{}) error {
 	var buf []byte
 	switch v := value.(type) {
 	case int:
@@ -206,11 +208,11 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 	case string:
 		buf = []byte(v)
 	default:
-		log.Fatalf("Unsupported value type: %T", v)
+		return fmt.Errorf("Unsupported value type: %T", v)
 	}
 
 	if w.dbf == nil {
-		log.Fatal("Initialize DBF by using SetFields first")
+		return errors.New("Initialize DBF by using SetFields first")
 	}
 
 	seekTo := 1 + int64(w.dbfHeaderLength) + (int64(row) * int64(w.dbfRecordLength))
@@ -218,7 +220,7 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) {
 		seekTo += int64(w.dbfFields[n].Size)
 	}
 	w.dbf.Seek(seekTo, io.SeekStart)
-	binary.Write(w.dbf, binary.LittleEndian, buf)
+	return binary.Write(w.dbf, binary.LittleEndian, buf)
 }
 
 // BBox returns the bounding box of the Writer.
