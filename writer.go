@@ -214,6 +214,9 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) error {
 	if w.dbf == nil {
 		return errors.New("Initialize DBF by using SetFields first")
 	}
+	if sz := int(w.dbfFields[field].Size); len(buf) > sz {
+		return fmt.Errorf("Unable to write field %v: %q exceeds field length %v", field, buf, sz)
+	}
 
 	seekTo := 1 + int64(w.dbfHeaderLength) + (int64(row) * int64(w.dbfRecordLength))
 	for n := 0; n < field; n++ {

@@ -129,9 +129,15 @@ func TestWriteAttribute(t *testing.T) {
 		wantData   string
 	}{
 		{"string-0", 0, 0, "test", 1, "test"},
+		{"string-0-overflow-1", 0, 0, "overflo", 0, ""},
+		{"string-0-overflow-n", 0, 0, "overflowing", 0, ""},
 		{"string-3", 3, 0, "things", 301, "things"},
 		{"float-0", 0, 1, 123.44, 7, "123.4400"},
+		{"float-0-overflow-1", 0, 1, 1234.0, 0, ""},
+		{"float-0-overflow-n", 0, 1, 123456789.0, 0, ""},
 		{"int-0", 0, 2, 4242, 15, "4242"},
+		{"int-0-overflow-1", 0, 2, 42424, 0, ""},
+		{"int-0-overflow-n", 0, 2, 42424343, 0, ""},
 	}
 
 	for _, test := range tests {
@@ -139,13 +145,16 @@ func TestWriteAttribute(t *testing.T) {
 			buf.Reset()
 			s.offset = 0
 
-			w.WriteAttribute(test.row, test.field, test.data)
+			err := w.WriteAttribute(test.row, test.field, test.data)
 
 			if buf.String() != test.wantData {
 				t.Errorf("got data: %v, want: %v", buf.String(), test.wantData)
 			}
 			if s.offset != test.wantOffset {
 				t.Errorf("got seek offset: %v, want: %v", s.offset, test.wantOffset)
+			}
+			if err == nil && test.wantData == "" {
+				t.Error("got no data and no error")
 			}
 		})
 	}
