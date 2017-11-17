@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -54,6 +55,113 @@ func Create(filename string, t ShapeType) (*Writer, error) {
 		shx:          shx,
 		GeometryType: t,
 	}
+	return w, nil
+}
+
+// Append returns a Writer pointer that will append to the given shapefile and
+// the first error that was encounted during creation of that Writer. The
+// shapefile must have a valid index file.
+func Append(filename string) (*Writer, error) {
+	shp, err := os.OpenFile(filename, os.O_RDWR, 0666)
+	if err != nil {
+		return nil, err
+	}
+	ext := filepath.Ext(filename)
+	basename := filename[:len(filename)-len(ext)]
+	w := &Writer{
+		filename: basename,
+		shp:      shp,
+	}
+	_, err = shp.Seek(32, io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to SHP geometry type: %v", err)
+	}
+	err = binary.Read(shp, binary.LittleEndian, &w.GeometryType)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read geometry type: %v", err)
+	}
+	er := &errReader{Reader: shp}
+	w.bbox.MinX = readFloat64(er)
+	w.bbox.MinY = readFloat64(er)
+	w.bbox.MaxX = readFloat64(er)
+	w.bbox.MaxY = readFloat64(er)
+	if er.e != nil {
+		return nil, fmt.Errorf("cannot read bounding box: %v", er.e)
+	}
+
+	shx, err := os.OpenFile(basename+".shx", os.O_RDWR, 0666)
+	if os.IsNotExist(err) {
+		// TODO allow index file to not exist, in that case just
+		// read through all the shapes and create it on the fly
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot open shapefile index: %v", err)
+	}
+	_, err = shx.Seek(-8, io.SeekEnd)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to last shape index: %v", err)
+	}
+	var offset int32
+	err = binary.Read(shx, binary.BigEndian, &offset)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read last shape index: %v", err)
+	}
+	offset = offset * 2
+	_, err = shp.Seek(int64(offset), io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to last shape: %v", err)
+	}
+	err = binary.Read(shp, binary.BigEndian, &w.num)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read number of last shape: %v", err)
+	}
+	_, err = shp.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to SHP end: %v", err)
+	}
+	_, err = shx.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to SHX end: %v", err)
+	}
+	w.shx = shx
+
+	dbf, err := os.Open(basename + ".dbf")
+	if os.IsNotExist(err) {
+		return w, nil // it's okay if the DBF does not exist
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot open DBF: %v", err)
+	}
+
+	_, err = dbf.Seek(8, io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek in DBF: %v", err)
+	}
+	err = binary.Read(dbf, binary.LittleEndian, &w.dbfHeaderLength)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read header length from DBF: %v", err)
+	}
+	err = binary.Read(dbf, binary.LittleEndian, &w.dbfRecordLength)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read record length from DBF: %v", err)
+	}
+
+	_, err = dbf.Seek(20, io.SeekCurrent) // skip padding
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek in DBF: %v", err)
+	}
+	numFields := int(math.Floor(float64(w.dbfHeaderLength-33) / 32.0))
+	w.dbfFields = make([]Field, numFields)
+	err = binary.Read(dbf, binary.LittleEndian, &w.dbfFields)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read number of fields from DBF: %v", err)
+	}
+	_, err = dbf.Seek(0, io.SeekEnd) // skip padding
+	if err != nil {
+		return nil, fmt.Errorf("cannot seek to DBF end: %v", err)
+	}
+	w.dbf = dbf
+
 	return w, nil
 }
 
