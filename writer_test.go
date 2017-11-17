@@ -26,6 +26,54 @@ func pointsToFloats(points []Point) [][]float64 {
 	return floats
 }
 
+func TestAppend(t *testing.T) {
+	filename := filenamePrefix + "point"
+	defer removeShapefile(filename)
+	points := [][]float64{
+		{0.0, 0.0},
+		{5.0, 5.0},
+		{10.0, 10.0},
+	}
+
+	shape, err := Create(filename+".shp", POINT)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range points {
+		shape.Write(&Point{p[0], p[1]})
+	}
+	wantNum := shape.num
+	shape.Close()
+
+	newPoints := [][]float64{
+		{15.0, 15.0},
+		{20.0, 20.0},
+		{25.0, 25.0},
+	}
+	shape, err = Append(filename + ".shp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shape.GeometryType != POINT {
+		t.Fatalf("wanted geo type %d, got %d", POINT, shape.GeometryType)
+	}
+	if shape.num != wantNum {
+		t.Fatalf("wrong 'num', wanted type %d, got %d", wantNum, shape.num)
+	}
+
+	for _, p := range newPoints {
+		shape.Write(&Point{p[0], p[1]})
+	}
+
+	points = append(points, newPoints...)
+
+	shapes := getShapesFromFile(filename, t)
+	if len(shapes) != len(points) {
+		t.Error("Number of shapes read was wrong")
+	}
+	testPoint(t, points, shapes)
+}
+
 func TestWritePoint(t *testing.T) {
 	filename := filenamePrefix + "point"
 	defer removeShapefile(filename)
