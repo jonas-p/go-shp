@@ -9,9 +9,11 @@ go:
 os:
   - linux
 
-branches:
-  only:
-    - master
+before_install:
+  - go get -t -v ./...
+      
+script:
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
 
-#after_success:
-#  - bash <(curl -s https://codecov.io/bash) -f all.cov
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
