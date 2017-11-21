@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Writer is the type that is used to write a new shapefile.
@@ -37,13 +38,17 @@ type writeSeekCloser interface {
 // This also creates a corresponding SHX file. It is important to use Close()
 // when done because that method writes all the headers for each file (SHP, SHX
 // and DBF).
+// If filename does not end on ".shp" already, it will be treated as the basename
+// for the file and the ".shp" extension will be appended to that name.
 func Create(filename string, t ShapeType) (*Writer, error) {
-	filename = filename[0 : len(filename)-3]
-	shp, err := os.Create(filename + "shp")
+	if strings.HasSuffix(strings.ToLower(filename), ".shp") {
+		filename = filename[0 : len(filename)-4]
+	}
+	shp, err := os.Create(filename + ".shp")
 	if err != nil {
 		return nil, err
 	}
-	shx, err := os.Create(filename + "shx")
+	shx, err := os.Create(filename + ".shx")
 	if err != nil {
 		return nil, err
 	}
