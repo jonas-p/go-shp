@@ -269,7 +269,7 @@ func (w *Writer) SetFields(fields []Field) error {
 	}
 
 	var err error
-	w.dbf, err = os.Create(w.filename + "dbf")
+	w.dbf, err = os.Create(w.filename + ".dbf")
 	if err != nil {
 		return fmt.Errorf("Failed to open %s.dbf: %v", w.filename, err)
 	}
