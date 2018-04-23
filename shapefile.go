@@ -6,25 +6,27 @@ import (
 	"strings"
 )
 
+//go:generate stringer -type=ShapeType
+
 // ShapeType is a identifier for the the type of shapes.
 type ShapeType int32
 
 // These are the possible shape types.
 const (
 	NULL        ShapeType = 0
-	POINT                 = 1
-	POLYLINE              = 3
-	POLYGON               = 5
-	MULTIPOINT            = 8
-	POINTZ                = 11
-	POLYLINEZ             = 13
-	POLYGONZ              = 15
-	MULTIPOINTZ           = 18
-	POINTM                = 21
-	POLYLINEM             = 23
-	POLYGONM              = 25
-	MULTIPOINTM           = 28
-	MULTIPATCH            = 31
+	POINT       ShapeType = 1
+	POLYLINE    ShapeType = 3
+	POLYGON     ShapeType = 5
+	MULTIPOINT  ShapeType = 8
+	POINTZ      ShapeType = 11
+	POLYLINEZ   ShapeType = 13
+	POLYGONZ    ShapeType = 15
+	MULTIPOINTZ ShapeType = 18
+	POINTM      ShapeType = 21
+	POLYLINEM   ShapeType = 23
+	POLYGONM    ShapeType = 25
+	MULTIPOINTM ShapeType = 28
+	MULTIPATCH  ShapeType = 31
 )
 
 // Box structure made up from four coordinates. This type
