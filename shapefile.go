@@ -65,18 +65,7 @@ func BBoxFromPoints(points []Point) (box Box) {
 		if k == 0 {
 			box = Box{p.X, p.Y, p.X, p.Y}
 		} else {
-			if p.X < box.MinX {
-				box.MinX = p.X
-			}
-			if p.Y < box.MinY {
-				box.MinY = p.Y
-			}
-			if p.X > box.MaxX {
-				box.MaxX = p.X
-			}
-			if p.Y > box.MaxY {
-				box.MaxY = p.Y
-			}
+			box.ExtendWithPoint(p)
 		}
 	}
 	return
