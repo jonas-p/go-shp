@@ -18,7 +18,10 @@ func (er *errReader) Read(p []byte) (n int, err error) {
 	if er.e != nil {
 		return 0, fmt.Errorf("unable to read after previous error: %v", er.e)
 	}
-	n, er.e = er.Reader.Read(p)
+	n, err = er.Reader.Read(p)
+	if n < len(p) && err != nil {
+		er.e = err
+	}
 	er.n += int64(n)
 	return n, er.e
 }
