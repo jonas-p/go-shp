@@ -75,6 +75,7 @@ func Open(filename string) (*Reader, error) {
 	return s, nil
 }
 
+// Open opens a Shapefile for reading using memory buffers
 func OpenFromMemory(shpFileData, dbfFileData []byte) (*Reader, error) {
 	mD := &memoryShapeData{
 		shpFileData: shpFileData,
