@@ -1,6 +1,7 @@
 package shp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -30,12 +31,33 @@ type Reader struct {
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
+
+	memoryData *memoryShapeData
 }
 
 type readSeekCloser interface {
 	io.Reader
 	io.Seeker
 	io.Closer
+}
+
+type byteSeekCloser struct {
+	bytes.Reader
+}
+
+func (bsc *byteSeekCloser) Close() error {
+	return nil
+}
+
+func newBytesReader(data []byte) *byteSeekCloser {
+	return &byteSeekCloser{
+		Reader: *bytes.NewReader(data),
+	}
+}
+
+type memoryShapeData struct {
+	shpFileData []byte
+	dbfFileData []byte
 }
 
 // Open opens a Shapefile for reading.
@@ -49,6 +71,17 @@ func Open(filename string) (*Reader, error) {
 		return nil, err
 	}
 	s := &Reader{filename: strings.TrimSuffix(filename, ext), shp: shp}
+	s.readHeaders()
+	return s, nil
+}
+
+func OpenFromMemory(shpFileData, dbfFileData []byte) (*Reader, error) {
+	mD := &memoryShapeData{
+		shpFileData: shpFileData,
+		dbfFileData: dbfFileData,
+	}
+
+	s := &Reader{filename: "", shp: newBytesReader(mD.shpFileData), memoryData: mD}
 	s.readHeaders()
 	return s, nil
 }
@@ -194,9 +227,13 @@ func (r *Reader) openDbf() (err error) {
 		return
 	}
 
-	r.dbf, err = os.Open(r.filename + ".dbf")
-	if err != nil {
-		return
+	if r.memoryData != nil {
+		r.dbf = newBytesReader(r.memoryData.dbfFileData)
+	} else {
+		r.dbf, err = os.Open(r.filename + ".dbf")
+		if err != nil {
+			return
+		}
 	}
 
 	// read header
