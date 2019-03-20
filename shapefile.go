@@ -571,6 +571,23 @@ type Field struct {
 	Padding   [14]byte
 }
 
+const (
+	// TextFieldLength is default length for 'Text' geodatabase data type
+	TextFieldLength uint8 = 254
+	// FloatFieldLength is default length for 'Float' geodatabase data type
+	FloatFieldLength uint8 = 18
+	// FloatFieldPrecision is default precision for 'Float' geodatabase data type
+	FloatFieldPrecision uint8 = 8
+	// ShortFieldLength is default length for 'Short' geodatabase data type
+	ShortFieldLength uint8 = 10
+	// LongFieldLength is default length for 'Long' geodatabase data type
+	LongFieldLength uint8 = 18
+	// DateFieldLength is default length for 'Date' geodatabase data type
+	DateFieldLength uint8 = 8
+	// BoolFieldLength is default length for boolean data type
+	BoolFieldLength uint8 = 3
+)
+
 // Returns a string representation of the Field. Currently
 // this only returns field name.
 func (f Field) String() string {
@@ -606,7 +623,15 @@ func FloatField(name string, length uint8, precision uint8) Field {
 // DBF file. Used to store Date strings formatted as YYYYMMDD. Data wise this
 // is the same as a StringField with length 8.
 func DateField(name string) Field {
-	field := Field{Fieldtype: 'D', Size: 8}
+	field := Field{Fieldtype: 'D', Size: DateFieldLength}
 	copy(field.Name[:], []byte(name))
+	return field
+}
+
+// BoolField feturns a Field that can be used in SetFields to initialize the
+// DBF file. Used to store boolean values using "Yes"/"No" strings
+func BoolField(name string) Field {
+	field := Field{Fieldtype: 'C', Size: BoolFieldLength}
+	copy(field.Name[:], name)
 	return field
 }
