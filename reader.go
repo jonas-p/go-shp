@@ -67,7 +67,7 @@ func (r *Reader) readHeaders() error {
 	var filelength int32
 	r.shp.Seek(24, 0)
 	// file length
-	binary.Read(r.shp, binary.BigEndian, &filelength)
+	binary.Read(er, binary.BigEndian, &filelength)
 	r.shp.Seek(32, 0)
 	binary.Read(er, binary.LittleEndian, &r.GeometryType)
 	r.bbox.MinX = readFloat64(er)
