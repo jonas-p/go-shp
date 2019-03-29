@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -50,7 +51,7 @@ func Open(filename string) (*Reader, error) {
 	}
 	s := &Reader{filename: strings.TrimSuffix(filename, ext), shp: shp}
 	s.readHeaders()
-	return s, nil
+	return s, s.readHeaders()
 }
 
 // BBox returns the bounding box of the shapefile.
@@ -60,9 +61,16 @@ func (r *Reader) BBox() Box {
 
 // Read and parse headers in the Shapefile. This will
 // fill out GeometryType, filelength and bbox.
-func (r *Reader) readHeaders() {
+func (r *Reader) readHeaders() error {
 	// don't trust the the filelength in the header
 	r.filelength, _ = r.shp.Seek(0, io.SeekEnd)
+
+	r.shp.Seek(0, 0)
+	var magic int32
+	binary.Read(r.shp, binary.BigEndian, &magic)
+	if magic != 9994 {
+		return errors.New("File signature doesn't match shapefile")
+	}
 
 	var filelength int32
 	r.shp.Seek(24, 0)
@@ -75,6 +83,7 @@ func (r *Reader) readHeaders() {
 	r.bbox.MaxX = readFloat64(r.shp)
 	r.bbox.MaxY = readFloat64(r.shp)
 	r.shp.Seek(100, 0)
+	return nil
 }
 
 func readFloat64(r io.Reader) float64 {
