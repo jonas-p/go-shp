@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -63,6 +64,13 @@ func (r *Reader) readHeaders() error {
 	er := &errReader{Reader: r.shp}
 	// don't trust the the filelength in the header
 	r.filelength, _ = r.shp.Seek(0, io.SeekEnd)
+
+	r.shp.Seek(0, 0)
+	var magic int32
+	binary.Read(er, binary.BigEndian, &magic)
+	if magic != 9994 {
+		return errors.New("file signature does not match shapefile")
+	}
 
 	var filelength int32
 	r.shp.Seek(24, 0)
