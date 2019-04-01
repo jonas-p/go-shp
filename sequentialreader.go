@@ -85,7 +85,7 @@ func (sr *seqReader) readHeaders() {
 	var magic int32
 	binary.Read(er, binary.BigEndian, &magic)
 	if er.e == nil && magic != 9994 {
-		er.e = errors.New("File signature doesn't match shapefile")
+		er.e = errors.New("file signature does not match shapefile")
 		return
 	}
 	io.CopyN(ioutil.Discard, er, 20)
