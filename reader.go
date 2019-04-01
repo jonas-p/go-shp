@@ -67,7 +67,7 @@ func (r *Reader) readHeaders() error {
 
 	r.shp.Seek(0, 0)
 	var magic int32
-	binary.Read(r.shp, binary.BigEndian, &magic)
+	binary.Read(er, binary.BigEndian, &magic)
 	if magic != 9994 {
 		return errors.New("File signature doesn't match shapefile")
 	}
