@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const defaultBufferSize = 64 * 1024 * 1024
+const defaultBufferSize = 64 * 1024
 
 // WGS84ProjWKT is projection WKT data for WGS84 coordinate system
 const WGS84ProjWKT = `GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]`
