@@ -17,7 +17,7 @@ import (
 const defaultBufferSize = 64 * 1024
 
 // WGS84ProjWKT is projection WKT data for WGS84 coordinate system
-const WGS84ProjWKT = `GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]`
+const WGS84ProjWKT = `GEOGCS["WGS 84", DATUM["World Geodetic System 1984", SPHEROID["WGS 84", 6378137, 298.257223563, AUTHORITY["EPSG", "7030"]], AUTHORITY["EPSG", "6326"]], PRIMEM["Greenwich", 0, AUTHORITY["EPSG", "8901"]], UNIT["degree", 0.0174532925199433, AUTHORITY["EPSG", "9102"]], AUTHORITY["EPSG", "4326"]]`
 
 // A byteRWSBuffer is a variable-sized buffer of bytes with Read, Write and Seek methods.
 type byteRWSBuffer struct {
