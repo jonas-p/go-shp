@@ -127,6 +127,8 @@ type ZipWriter struct {
 	dbfHeaderLength int16
 	dbfRecordLength int16
 
+	projWKT string
+
 	zbuf *byteRWSBuffer
 	zipw *zip.Writer
 
@@ -178,6 +180,11 @@ func (w *ZipWriter) UseShapeType(t ShapeType) error {
 	}
 	w.GeometryType = t
 	return nil
+}
+
+// UseProjWKT sets WKT representaion of CRS, Value is written to .prj file
+func (w *ZipWriter) UseProjWKT(wkt string) {
+	w.projWKT = wkt
 }
 
 // GetShapeType returns writer's shape type
@@ -241,7 +248,11 @@ func (w *ZipWriter) Close() error {
 	if err != nil {
 		return err
 	}
-	prj.Write([]byte(WGS84ProjWKT))
+	projWKT := w.projWKT
+	if projWKT == "" {
+		projWKT = WGS84ProjWKT
+	}
+	prj.Write([]byte(projWKT))
 	return w.zipw.Close()
 }
 
