@@ -10,7 +10,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -18,6 +17,8 @@ const defaultBufferSize = 64 * 1024
 
 // WGS84ProjWKT is projection WKT data for WGS84 coordinate system
 const WGS84ProjWKT = `GEOGCS["WGS 84", DATUM["World Geodetic System 1984", SPHEROID["WGS 84", 6378137, 298.257223563, AUTHORITY["EPSG", "7030"]], AUTHORITY["EPSG", "6326"]], PRIMEM["Greenwich", 0, AUTHORITY["EPSG", "8901"]], UNIT["degree", 0.0174532925199433, AUTHORITY["EPSG", "9102"]], AUTHORITY["EPSG", "4326"]]`
+
+// NAD27ProjWKT is projection WKT data for NAD27 coordinate system
 const NAD27ProjWKT = `GEOGCS["NAD27", DATUM["North_American_Datum_1927", SPHEROID["Clarke 1866", 6378206.4, 294.9786982138982, AUTHORITY["EPSG", "7008"]], AUTHORITY["EPSG", "6267"]], PRIMEM["Greenwich", 0, AUTHORITY["EPSG","8901"]], UNIT["degree", 0.01745329251994328, AUTHORITY["EPSG", "9122"]], AUTHORITY["EPSG", "4267"]]`
 
 // A byteRWSBuffer is a variable-sized buffer of bytes with Read, Write and Seek methods.
@@ -115,6 +116,7 @@ func newByteBuffer(n int) *byteRWSBuffer {
 // It support incremental DBF writes
 type ZipWriter struct {
 	filename     string
+	suffix       string
 	shp          *byteRWSBuffer
 	shx          *byteRWSBuffer
 	GeometryType ShapeType
@@ -135,16 +137,60 @@ type ZipWriter struct {
 	headerSent bool
 }
 
-// CreateZip creates ZipWriter instance and the first error that was encountered.
-// This also creates a corresponding SHX file. It is important to use Close()
-// when done because that method writes all the headers for each file (SHP, SHX
-// and DBF).
-// If filename does not end on ".shp" already, it will be treated as the basename
-// for the file and the ".shp" extension will be appended to that name.
-func CreateZip(filename string, t ShapeType, n int) (*ZipWriter, error) {
-	if strings.HasSuffix(strings.ToLower(filename), ".shp") {
-		filename = filename[0 : len(filename)-4]
+func (w *ZipWriter) closeLayer() error {
+	var fname = w.filename + w.suffix
+	if w.shp != nil {
+		w.writeHeader(w.shp)
+		// flush SHP data
+		shp, err := w.zipw.Create(fname + ".shp")
+		if err != nil {
+			return err
+		}
+		shp.Write(w.shp.Bytes())
 	}
+
+	if w.shx != nil {
+		w.writeHeader(w.shx)
+		// flush SHX data
+		shx, err := w.zipw.Create(fname + ".shx")
+		if err != nil {
+			return err
+		}
+		shx.Write(w.shx.Bytes())
+	}
+
+	// flush PRJ data
+	prj, err := w.zipw.Create(fname + ".prj")
+	if err != nil {
+		return err
+	}
+	projWKT := w.projWKT
+	if projWKT == "" {
+		projWKT = WGS84ProjWKT
+	}
+	prj.Write([]byte(projWKT))
+
+	w.headerSent = false
+	w.num = 0
+	// Reset buffers
+	w.dbf = nil
+	w.shx = nil
+	w.shp = nil
+
+	return nil
+}
+
+// CreateLayer - adds new shape layer to zip
+func (w *ZipWriter) CreateLayer(suffix string, t ShapeType, n int) error {
+	if w.zipw == nil {
+		return errors.New("zip writer not initialized")
+	}
+	if w.shp != nil {
+		w.closeLayer()
+	}
+
+	// Set layer filename suffix
+	w.suffix = suffix
 
 	shp := newByteBuffer(defaultBufferSize)
 	shx := newByteBuffer(defaultBufferSize)
@@ -152,24 +198,31 @@ func CreateZip(filename string, t ShapeType, n int) (*ZipWriter, error) {
 	shp.Seek(100, io.SeekStart)
 	shx.Seek(100, io.SeekStart)
 
-	zbuf := newByteBuffer(defaultBufferSize)
-	zw := zip.NewWriter(zbuf)
-	dbf, err := zw.Create(filename + ".dbf")
+	dbf, err := w.zipw.Create(w.filename + w.suffix + ".dbf")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	w.dbf = dbf
+	w.shp = shp
+	w.shx = shx
+	w.GeometryType = t
+	w.dbfRecordsNum = int32(n)
+
+	return nil
+}
+
+// CreateZip creates ZipWriter instance. No layer is created.
+func CreateZip(filename string) *ZipWriter {
+	zbuf := newByteBuffer(defaultBufferSize)
+	zw := zip.NewWriter(zbuf)
+
 	w := &ZipWriter{
-		filename:      filename,
-		shp:           shp,
-		shx:           shx,
-		dbf:           dbf,
-		zbuf:          zbuf,
-		zipw:          zw,
-		GeometryType:  t,
-		dbfRecordsNum: int32(n),
+		filename: filename,
+		zbuf:     zbuf,
+		zipw:     zw,
 	}
-	return w, nil
+	return w
 }
 
 // UseShapeType does "lazy" shape type initialization when
@@ -195,7 +248,10 @@ func (w *ZipWriter) GetShapeType() ShapeType {
 // Write shape to the Shapefile. This also creates
 // a record in the SHX file.
 // Returns the index of the written object
-func (w *ZipWriter) Write(shape Shape) int32 {
+func (w *ZipWriter) Write(shape Shape) (int32, error) {
+	if w.shx == nil {
+		return 0, errors.New("Must create layer before Write")
+	}
 	// increase bbox
 	if w.num == 0 {
 		w.bbox = shape.BBox()
@@ -219,40 +275,16 @@ func (w *ZipWriter) Write(shape Shape) int32 {
 	binary.Write(w.shx, binary.BigEndian, int32((start-8)/2))
 	binary.Write(w.shx, binary.BigEndian, length)
 
-	return w.num - 1
+	return w.num - 1, nil
 }
 
 // Close closes the Writer. This must be used at the end of
 // the transaction because it writes the correct headers
 // to the SHP/SHX and adds all files to ZIP archive
 func (w *ZipWriter) Close() error {
-	w.writeHeader(w.shx)
-	w.writeHeader(w.shp)
-
-	// flush SHP data
-	shp, err := w.zipw.Create(w.filename + ".shp")
-	if err != nil {
+	if err := w.closeLayer(); err != nil {
 		return err
 	}
-	shp.Write(w.shp.Bytes())
-
-	// flush SHX data
-	shx, err := w.zipw.Create(w.filename + ".shx")
-	if err != nil {
-		return err
-	}
-	shx.Write(w.shx.Bytes())
-
-	// flush PRJ data
-	prj, err := w.zipw.Create(w.filename + ".prj")
-	if err != nil {
-		return err
-	}
-	projWKT := w.projWKT
-	if projWKT == "" {
-		projWKT = WGS84ProjWKT
-	}
-	prj.Write([]byte(projWKT))
 	return w.zipw.Close()
 }
 
