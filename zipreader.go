@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
 // ZipReader provides an interface for reading Shapefiles that are compressed in a ZIP archive.
 type ZipReader struct {
-	sr SequentialReader
-	z  *zip.ReadCloser
+	sr        SequentialReader
+	z         *zip.ReadCloser
+	filenames map[string]string
 }
 
 // openFromZIP is convenience function for opening the file called name that is
@@ -105,6 +107,32 @@ func OpenShapeFromZip(zipFilePath string, name string) (*ZipReader, error) {
 	return zr, nil
 }
 
+// NewFromZipShape creates a reader from a Zip Reader
+func NewFromZipShape(z *zip.ReadCloser) (*ZipReader, error) {
+	zr := &ZipReader{
+		z:         z,
+		filenames: getZipFileList(z),
+	}
+
+	shp, err := openFromZIP(zr.z, zr.filenames[".shp"])
+	if err != nil {
+		return nil, err
+	}
+	// dbf is optional, so no error checking here
+	dbf, _ := openFromZIP(zr.z, zr.filenames[".dbf"])
+	zr.sr = SequentialReaderFromExt(shp, dbf)
+	return zr, nil
+}
+
+// OpenZipShape opens a shape file that is contained in a ZIP archive
+func OpenZipShape(zipFilePath string) (*ZipReader, error) {
+	z, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return nil, err
+	}
+	return NewFromZipShape(z)
+}
+
 // Close closes the ZipReader and frees the allocated resources.
 func (zr *ZipReader) Close() error {
 	s := ""
@@ -148,4 +176,27 @@ func (zr *ZipReader) Fields() []Field {
 // Err returns the last non-EOF error that was encountered by this ZipReader.
 func (zr *ZipReader) Err() error {
 	return zr.sr.Err()
+}
+
+func listZipFiles(file *zip.File) (string, string, error) {
+	fileread, err := file.Open()
+	if err != nil {
+		msg := "Failed to open zip %s for reading: %s"
+		return "", "", fmt.Errorf(msg, file.Name, err)
+	}
+	defer fileread.Close()
+
+	return filepath.Ext(file.Name), file.Name, nil
+}
+
+func getZipFileList(z *zip.ReadCloser) map[string]string {
+	content := map[string]string{}
+
+	for _, file := range z.File {
+		if ftype, name, err := listZipFiles(file); err == nil {
+			content[ftype] = name
+		}
+	}
+
+	return content
 }
