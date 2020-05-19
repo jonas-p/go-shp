@@ -1,7 +1,9 @@
 package shp
 
 import (
+	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -19,26 +21,43 @@ type Reader struct {
 	bbox         Box
 	err          error
 
-	shp        readSeekCloser
+	shp        ReadSeekCloser
 	shape      Shape
 	num        int32
 	filename   string
 	filelength int64
 
-	dbf             readSeekCloser
+	dbf             ReadSeekCloser
+	readDbfHeaders  bool
 	dbfFields       []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
 	dbfRecordLength int16
 }
 
-type readSeekCloser interface {
+// ReadSeekCloser is the union of the io.Reader, io.Seeker and io.Closer interfaces
+type ReadSeekCloser interface {
 	io.Reader
 	io.Seeker
 	io.Closer
 }
 
-// Open opens a Shapefile for reading.
+type bytesReadSeekCloser struct {
+	*bytes.Reader
+}
+
+func (b *bytesReadSeekCloser) Close() error {
+	return nil
+}
+
+// NewReadSeekCloserFromBytes is a convenience method to create a ReadSeekCloser from a slice of bytes
+func NewReadSeekCloserFromBytes(data []byte) ReadSeekCloser {
+	return &bytesReadSeekCloser{Reader: bytes.NewReader(data)}
+}
+
+// Open opens a Shapefile for reading. The filename must have a .shp extension, and a companion .dbf file must be
+// present for calls to Fields, AttributeCount and ReadAttribute to succeed. Shapes can still be read without a .dbf
+// file
 func Open(filename string) (*Reader, error) {
 	ext := filepath.Ext(filename)
 	if strings.ToLower(ext) != ".shp" {
@@ -48,8 +67,26 @@ func Open(filename string) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Reader{filename: strings.TrimSuffix(filename, ext), shp: shp}
-	return s, s.readHeaders()
+	r, err := Read(shp, nil)
+	if err != nil {
+		return nil, err
+	}
+	r.filename = strings.TrimSuffix(filename, ext)
+	return r, nil
+}
+
+// Read opens a Shapefile and optional companion dBase file for reading. Calls to Fields, AttributeCount and
+// ReadAttribute will fail if no dbase reader is specified.
+func Read(shp, dbf ReadSeekCloser) (*Reader, error) {
+	s := &Reader{
+		shp: shp,
+		dbf: dbf,
+	}
+	err := s.readHeaders()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 // BBox returns the bounding box of the shapefile.
@@ -191,13 +228,18 @@ func (r *Reader) Next() bool {
 // will parse the header and fill out all dbf* values int
 // the f object.
 func (r *Reader) openDbf() (err error) {
-	if r.dbf != nil {
-		return
+	if r.readDbfHeaders {
+		return nil
 	}
 
-	r.dbf, err = os.Open(r.filename + ".dbf")
-	if err != nil {
-		return
+	if r.dbf == nil {
+		if r.filename == "" {
+			return errors.New("No dbf reader specified")
+		}
+		r.dbf, err = os.Open(r.filename + ".dbf")
+		if err != nil {
+			return err
+		}
 	}
 
 	// read header
@@ -210,7 +252,9 @@ func (r *Reader) openDbf() (err error) {
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
 	r.dbfFields = make([]Field, numFields)
 	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
-	return
+
+	r.readDbfHeaders = true
+	return nil
 }
 
 // Fields returns a slice of Fields that are present in the
