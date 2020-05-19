@@ -1,9 +1,6 @@
 package shp
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"testing"
 )
 
@@ -486,16 +483,6 @@ func TestReadMultiPatch(t *testing.T) {
 	testshapeIdentity(t, "test_files/multipatch", getShapesFromFile)
 }
 
-func newReadSeekCloser(b []byte) readSeekCloser {
-	return struct {
-		io.Closer
-		io.ReadSeeker
-	}{
-		ioutil.NopCloser(nil),
-		bytes.NewReader(b),
-	}
-}
-
 func TestReadInvalidShapeType(t *testing.T) {
 	record := []byte{
 		0, 0, 0, 0,
@@ -510,8 +497,8 @@ func TestReadInvalidShapeType(t *testing.T) {
 		}
 		name string
 	}{
-		{&Reader{shp: newReadSeekCloser(record), filelength: int64(len(record))}, "reader"},
-		{&seqReader{shp: newReadSeekCloser(record), filelength: int64(len(record))}, "seqReader"},
+		{&Reader{shp: NewReadSeekCloserFromBytes(record), filelength: int64(len(record))}, "reader"},
+		{&seqReader{shp: NewReadSeekCloserFromBytes(record), filelength: int64(len(record))}, "seqReader"},
 	}
 
 	for _, test := range tests {
