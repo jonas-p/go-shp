@@ -11,12 +11,13 @@ import (
 // ZipReader provides an interface for reading Shapefiles that are compressed in a ZIP archive.
 type ZipReader struct {
 	sr SequentialReader
-	z  *zip.ReadCloser
+	z  *zip.Reader
+	c  io.Closer
 }
 
 // openFromZIP is convenience function for opening the file called name that is
 // compressed in z for reading.
-func openFromZIP(z *zip.ReadCloser, name string) (io.ReadCloser, error) {
+func openFromZIP(z *zip.Reader, name string) (io.ReadCloser, error) {
 	for _, f := range z.File {
 		if f.Name == name {
 			return f.Open()
@@ -32,8 +33,14 @@ func OpenZip(zipFilePath string) (*ZipReader, error) {
 	if err != nil {
 		return nil, err
 	}
+	return OpenZipReader(&z.Reader, z)
+}
+
+// OpenZipReader opens a ZIP Strewam that contains a single shapefile.
+func OpenZipReader(z *zip.Reader, c io.Closer) (*ZipReader, error) {
 	zr := &ZipReader{
 		z: z,
+		c: c,
 	}
 	shapeFiles := shapesInZip(z)
 	if len(shapeFiles) == 0 {
@@ -62,14 +69,15 @@ func ShapesInZip(zipFilePath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	shapeFiles := shapesInZip(z)
+	shapeFiles := shapesInZip(&z.Reader)
+	defer z.Close()
 	for i := range shapeFiles {
 		names = append(names, shapeFiles[i].Name)
 	}
 	return names, nil
 }
 
-func shapesInZip(z *zip.ReadCloser) []*zip.File {
+func shapesInZip(z *zip.Reader) []*zip.File {
 	var shapeFiles []*zip.File
 	for _, f := range z.File {
 		if strings.HasSuffix(f.Name, ".shp") {
@@ -91,7 +99,8 @@ func OpenShapeFromZip(zipFilePath string, name string) (*ZipReader, error) {
 		return nil, err
 	}
 	zr := &ZipReader{
-		z: z,
+		z: &z.Reader,
+		c: z,
 	}
 
 	shp, err := openFromZIP(zr.z, name)
@@ -112,9 +121,11 @@ func (zr *ZipReader) Close() error {
 	if err != nil {
 		s += err.Error() + ". "
 	}
-	err = zr.z.Close()
-	if err != nil {
-		s += err.Error() + ". "
+	if zr.c != nil {
+		err = zr.c.Close()
+		if err != nil {
+			s += err.Error() + ". "
+		}
 	}
 	if s != "" {
 		return fmt.Errorf(s)
