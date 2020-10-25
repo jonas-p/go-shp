@@ -40,6 +40,7 @@ type readSeekCloser interface {
 	io.Closer
 }
 
+// ProviderConfigurator is the Reader configurator
 type ProviderConfigurator func(*Reader) error
 
 // New Creates a Reader from streams

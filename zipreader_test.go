@@ -247,3 +247,33 @@ func TestNaturalEarthZip(t *testing.T) {
 		t.Log(m.Attributes["name"])
 	}
 }
+
+func TestShapesInZip(t *testing.T) {
+	p := "ne_110m_admin_0_countries"
+	skipOrDownloadNaturalEarth(t, p+".zip")
+
+	z, err := zip.OpenReader(p + ".zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	shapeFiles := shapesInZip(z)
+
+	if shapeFiles.countExt(".shp") != 1 {
+		t.Fatalf("Expected 1 shp file, got %d", shapeFiles.countExt(".shp"))
+	}
+
+	set, ok := shapeFiles[p]
+	if !ok {
+		t.Fatalf("Expected to find file [%s]", p)
+	}
+
+	if _, ok := set[".shp"]; !ok {
+		t.Fatalf("Expected to find file [%s.shp]", p)
+	}
+
+	if _, ok := set[".dbf"]; !ok {
+		t.Fatalf("Expected to find file [%s.dbf]", p)
+	}
+
+}
