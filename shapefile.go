@@ -77,7 +77,7 @@ func BBoxFromPoints(points []Point) (box Box) {
 type Shape interface {
 	BBox() Box
 
-	read(io.Reader)
+	read(io.Reader) int
 	write(io.Writer)
 }
 
@@ -90,8 +90,8 @@ func (n Null) BBox() Box {
 	return Box{0.0, 0.0, 0.0, 0.0}
 }
 
-func (n *Null) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, n)
+func (n *Null) read(file io.Reader) int {
+	return 0
 }
 
 func (n *Null) write(file io.Writer) {
@@ -109,8 +109,9 @@ func (p Point) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
 
-func (p *Point) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, p)
+func (p *Point) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, p)
+	return 16
 }
 
 func (p *Point) write(file io.Writer) {
@@ -170,14 +171,15 @@ func (p PolyLine) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolyLine) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *PolyLine) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	return int(40 + p.NumPoints*16 + p.NumParts*4)
 }
 
 func (p *PolyLine) write(file io.Writer) {
@@ -197,14 +199,15 @@ func (p Polygon) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *Polygon) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *Polygon) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	return int(40 + p.NumPoints*16 + p.NumParts*4)
 }
 
 func (p *Polygon) write(file io.Writer) {
@@ -227,11 +230,12 @@ func (p MultiPoint) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *MultiPoint) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *MultiPoint) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Points = make([]Point, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	return int(36 + p.NumPoints*16)
 }
 
 func (p *MultiPoint) write(file io.Writer) {
@@ -254,8 +258,9 @@ func (p PointZ) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
 
-func (p *PointZ) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, p)
+func (p *PointZ) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, p)
+	return 32
 }
 
 func (p *PointZ) write(file io.Writer) {
@@ -282,20 +287,21 @@ func (p PolyLineZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolyLineZ) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *PolyLineZ) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
 	p.ZArray = make([]float64, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.ZRange)
-	binary.Read(file, binary.LittleEndian, &p.ZArray)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(40 + 4*p.NumParts + 16*p.NumPoints + 8*p.NumPoints + 8*p.NumPoints + 32)
 }
 
 func (p *PolyLineZ) write(file io.Writer) {
@@ -318,20 +324,21 @@ func (p PolygonZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolygonZ) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *PolygonZ) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
 	p.ZArray = make([]float64, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.ZRange)
-	binary.Read(file, binary.LittleEndian, &p.ZArray)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(40 + 4*p.NumParts + 16*p.NumPoints + 8*p.NumPoints + 8*p.NumPoints + 32)
 }
 
 func (p *PolygonZ) write(file io.Writer) {
@@ -362,17 +369,18 @@ func (p MultiPointZ) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *MultiPointZ) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *MultiPointZ) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Points = make([]Point, p.NumPoints)
 	p.ZArray = make([]float64, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.ZRange)
-	binary.Read(file, binary.LittleEndian, &p.ZArray)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(36 + 16*p.NumPoints + 8*p.NumPoints + 8*p.NumPoints + 32)
 }
 
 func (p *MultiPointZ) write(file io.Writer) {
@@ -398,8 +406,9 @@ func (p PointM) BBox() Box {
 	return Box{p.X, p.Y, p.X, p.Y}
 }
 
-func (p *PointM) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, p)
+func (p *PointM) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, p)
+	return 24
 }
 
 func (p *PointM) write(file io.Writer) {
@@ -422,17 +431,18 @@ func (p PolyLineM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolyLineM) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *PolyLineM) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(40 + 4*p.NumParts + 16*p.NumPoints + 8*p.NumPoints + 16)
 }
 
 func (p *PolyLineM) write(file io.Writer) {
@@ -453,17 +463,18 @@ func (p PolygonM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *PolygonM) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *PolygonM) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(40 + 4*p.NumParts + 16*p.NumPoints + 8*p.NumPoints + 16)
 }
 
 func (p *PolygonM) write(file io.Writer) {
@@ -490,14 +501,15 @@ func (p MultiPointM) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *MultiPointM) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *MultiPointM) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Points = make([]Point, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(36 + 16*p.NumPoints + 8*p.NumPoints + 16)
 }
 
 func (p *MultiPointM) write(file io.Writer) {
@@ -530,22 +542,23 @@ func (p MultiPatch) BBox() Box {
 	return BBoxFromPoints(p.Points)
 }
 
-func (p *MultiPatch) read(file io.Reader) {
-	binary.Read(file, binary.LittleEndian, &p.Box)
-	binary.Read(file, binary.LittleEndian, &p.NumParts)
-	binary.Read(file, binary.LittleEndian, &p.NumPoints)
+func (p *MultiPatch) read(file io.Reader) int {
+	_ = binary.Read(file, binary.LittleEndian, &p.Box)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumParts)
+	_ = binary.Read(file, binary.LittleEndian, &p.NumPoints)
 	p.Parts = make([]int32, p.NumParts)
 	p.PartTypes = make([]int32, p.NumParts)
 	p.Points = make([]Point, p.NumPoints)
 	p.ZArray = make([]float64, p.NumPoints)
 	p.MArray = make([]float64, p.NumPoints)
-	binary.Read(file, binary.LittleEndian, &p.Parts)
-	binary.Read(file, binary.LittleEndian, &p.PartTypes)
-	binary.Read(file, binary.LittleEndian, &p.Points)
-	binary.Read(file, binary.LittleEndian, &p.ZRange)
-	binary.Read(file, binary.LittleEndian, &p.ZArray)
-	binary.Read(file, binary.LittleEndian, &p.MRange)
-	binary.Read(file, binary.LittleEndian, &p.MArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.Parts)
+	_ = binary.Read(file, binary.LittleEndian, &p.PartTypes)
+	_ = binary.Read(file, binary.LittleEndian, &p.Points)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.ZArray)
+	_ = binary.Read(file, binary.LittleEndian, &p.MRange)
+	_ = binary.Read(file, binary.LittleEndian, &p.MArray)
+	return int(40 + 8*p.NumParts + 16*p.NumPoints + 16*p.NumPoints + 32)
 }
 
 func (p *MultiPatch) write(file io.Writer) {

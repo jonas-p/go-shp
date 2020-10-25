@@ -118,11 +118,24 @@ func TestZipReaderAttribute(t *testing.T) {
 	skipOrDownloadNaturalEarth(t, b+".zip")
 	d := unzipToTempDir(t, b+".zip")
 	defer os.RemoveAll(d)
-	lr, err := Open(filepath.Join(d, b+".shp"))
+
+	dbf, err := os.Open(b + ".dbf")
+	if err != nil {
+		t.Fatal("Failed to open databaseFile: " + b + ".dbf (" + err.Error() + ")")
+	}
+	defer func() { _ = dbf.Close() }()
+
+	shp, err := os.Open(b + ".shp")
+	if err != nil {
+		t.Fatal("Failed to open shapefile: " + b + ".shp (" + err.Error() + ")")
+	}
+	defer func() { _ = shp.Close() }()
+
+	lr, err := New(shp, WithSeekableDBF(dbf))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lr.Close()
+
 	zr, err := OpenZip(b + ".zip")
 	if os.IsNotExist(err) {
 		t.Skipf("Skipping test, as Natural Earth dataset wasn't found")
