@@ -23,10 +23,25 @@ import "github.com/jonas-p/go-shp"
 #### Reading a shapefile
 
 ```go
-// open a shapefile for reading
-shape, err := shp.Open("points.shp")
-if err != nil { log.Fatal(err) } 
-defer shape.Close()
+// open a shapefile (SHP) for reading
+shp, err := os.Open(prefix + ".shp")
+if err != nil {
+	log.Fatal(err)
+}
+defer func() { _ = shp.Close() }()
+
+// open a shapefile (DBF) for reading (needed to read attributes)
+dbf, err := os.Open(prefix + ".dbf")
+if err != nil {
+	log.Fatal(err)
+}
+defer func() { _ = dbf.Close() }()
+
+// Create the Reader
+shape, err := New(shp, WithSeekableDBF(dbf))
+if err != nil {
+	log.Fatal(err)
+}
 	
 // fields from the attribute table (DBF)
 fields := shape.Fields()

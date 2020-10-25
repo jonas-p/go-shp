@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
-	"path/filepath"
 	"strings"
 )
+
+const magic int32 = 0x0000270a
 
 // Reader provides a interface for reading Shapefiles. Calls
 // to the Next method will iterate through the objects in the
@@ -19,13 +19,15 @@ type Reader struct {
 	bbox         Box
 	err          error
 
-	shp        readSeekCloser
-	shape      Shape
-	num        int32
-	filename   string
+	//shpFs      io.ReadCloser
+	shp   io.Reader
+	shape Shape
+	num   int32
+	//filename   string
 	filelength int64
 
-	dbf             readSeekCloser
+	dbf             io.Reader //readSeekCloser
+	dbfSeek         io.ReadSeeker
 	dbfFields       []Field
 	dbfNumRecords   int32
 	dbfHeaderLength int16
@@ -38,18 +40,56 @@ type readSeekCloser interface {
 	io.Closer
 }
 
-// Open opens a Shapefile for reading.
-func Open(filename string) (*Reader, error) {
-	ext := filepath.Ext(filename)
-	if strings.ToLower(ext) != ".shp" {
-		return nil, fmt.Errorf("Invalid file extension: %s", filename)
+// ProviderConfigurator is the Reader configurator
+type ProviderConfigurator func(*Reader) error
+
+// New Creates a Reader from streams
+func New(shp io.Reader, conf ...ProviderConfigurator) (*Reader, error) {
+	if shp == nil {
+		return nil, fmt.Errorf("missing shp reader")
 	}
-	shp, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+
+	s := &Reader{shp: shp}
+
+	for _, cnf := range conf {
+		if err := cnf(s); err != nil {
+			return nil, err
+		}
 	}
-	s := &Reader{filename: strings.TrimSuffix(filename, ext), shp: shp}
+
 	return s, s.readHeaders()
+}
+
+// WithDBF appends a io.Reader as DBF source
+func WithDBF(dbf io.Reader) ProviderConfigurator {
+	return func(r *Reader) error {
+		if dbf == nil {
+			return fmt.Errorf("missing reader")
+		}
+
+		if r.dbfSeek != nil {
+			return fmt.Errorf("you can only provide one DBF source")
+		}
+
+		r.dbf = dbf
+		return nil
+	}
+}
+
+// WithSeekableDBF appends a io.ReadSeeker as DBF source
+func WithSeekableDBF(dbf io.ReadSeeker) ProviderConfigurator {
+	return func(r *Reader) error {
+		if dbf == nil {
+			return fmt.Errorf("missing readseeker")
+		}
+
+		if r.dbf != nil {
+			return fmt.Errorf("you can only provide one DBF source")
+		}
+
+		r.dbfSeek = dbf
+		return nil
+	}
 }
 
 // BBox returns the bounding box of the shapefile.
@@ -61,20 +101,46 @@ func (r *Reader) BBox() Box {
 // fill out GeometryType, filelength and bbox.
 func (r *Reader) readHeaders() error {
 	er := &errReader{Reader: r.shp}
-	// don't trust the the filelength in the header
-	r.filelength, _ = r.shp.Seek(0, io.SeekEnd)
+	var (
+		m          int32
+		filelength int32
+	)
 
-	var filelength int32
-	r.shp.Seek(24, 0)
-	// file length
-	binary.Read(er, binary.BigEndian, &filelength)
-	r.shp.Seek(32, 0)
-	binary.Read(er, binary.LittleEndian, &r.GeometryType)
+	// Read magic
+	err := binary.Read(er, binary.BigEndian, &m)
+	if err != nil {
+		return err
+	}
+
+	if magic != m {
+		return fmt.Errorf("wrong magic, expected %04x, got %04x", magic, m)
+	}
+
+	// skip next 5 uint32
+	_, _ = r.shp.Read(make([]byte, 20))
+
+	err = binary.Read(er, binary.BigEndian, &filelength)
+	if err != nil {
+		return err
+	}
+	r.filelength = int64(filelength)
+
+	// skip version (int32)
+	_, _ = r.shp.Read(make([]byte, 4))
+
+	// Read Type
+	err = binary.Read(er, binary.LittleEndian, &r.GeometryType)
+	if err != nil {
+		return err
+	}
+
 	r.bbox.MinX = readFloat64(er)
 	r.bbox.MinY = readFloat64(er)
 	r.bbox.MaxX = readFloat64(er)
 	r.bbox.MaxY = readFloat64(er)
-	r.shp.Seek(100, 0)
+
+	// skip next 32 bytes
+	_, _ = r.shp.Read(make([]byte, 32))
 	return er.e
 }
 
@@ -86,13 +152,14 @@ func readFloat64(r io.Reader) float64 {
 
 // Close closes the Shapefile.
 func (r *Reader) Close() error {
-	if r.err == nil {
-		r.err = r.shp.Close()
+	/*if r.err == nil && r.shpFs != nil {
+		r.err = r.shpFs.Close()
 		if r.dbf != nil {
 			r.dbf.Close()
 		}
 	}
-	return r.err
+	return r.err*/
+	return nil
 }
 
 // Shape returns the most recent feature that was read by
@@ -150,17 +217,14 @@ func newShape(shapetype ShapeType) (Shape, error) {
 // returns false when the reader has reached the end of the
 // file or encounters an error.
 func (r *Reader) Next() bool {
-	cur, _ := r.shp.Seek(0, io.SeekCurrent)
-	if cur >= r.filelength {
-		return false
-	}
-
 	var size int32
 	var shapetype ShapeType
 	er := &errReader{Reader: r.shp}
-	binary.Read(er, binary.BigEndian, &r.num)
-	binary.Read(er, binary.BigEndian, &size)
-	binary.Read(er, binary.LittleEndian, &shapetype)
+
+	_ = binary.Read(er, binary.BigEndian, &r.num)
+	_ = binary.Read(er, binary.BigEndian, &size) // size counts the 16-bit words
+	_ = binary.Read(er, binary.LittleEndian, &shapetype)
+
 	if er.e != nil {
 		if er.e != io.EOF {
 			r.err = fmt.Errorf("Error when reading metadata of next shape: %v", er.e)
@@ -176,14 +240,29 @@ func (r *Reader) Next() bool {
 		r.err = fmt.Errorf("Error decoding shape type: %v", err)
 		return false
 	}
-	r.shape.read(er)
+	count := r.shape.read(er)
 	if er.e != nil {
 		r.err = fmt.Errorf("Error while reading next shape: %v", er.e)
 		return false
 	}
 
+	offset := 2*size - int32(count) - 4
+	if offset < 0 {
+		r.err = fmt.Errorf("too many bytes were read")
+		return false
+	}
+
 	// move to next object
-	r.shp.Seek(int64(size)*2+cur+8, 0)
+	if offset > 0 {
+		_, err = r.shp.Read(make([]byte, offset))
+		if err != nil && err != io.EOF {
+			r.err = err
+		}
+		if err != nil {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -191,25 +270,29 @@ func (r *Reader) Next() bool {
 // will parse the header and fill out all dbf* values int
 // the f object.
 func (r *Reader) openDbf() (err error) {
-	if r.dbf != nil {
-		return
+	if r.dbf == nil && r.dbfSeek == nil {
+		return fmt.Errorf("missing DBF")
 	}
 
-	r.dbf, err = os.Open(r.filename + ".dbf")
-	if err != nil {
-		return
+	dbf := r.dbf
+	if dbf == nil {
+		dbf = r.dbfSeek
 	}
+
+	// skip next 4 bytes
+	_, _ = r.shp.Read(make([]byte, 4))
 
 	// read header
-	r.dbf.Seek(4, io.SeekStart)
-	binary.Read(r.dbf, binary.LittleEndian, &r.dbfNumRecords)
-	binary.Read(r.dbf, binary.LittleEndian, &r.dbfHeaderLength)
-	binary.Read(r.dbf, binary.LittleEndian, &r.dbfRecordLength)
+	binary.Read(dbf, binary.LittleEndian, &r.dbfNumRecords)
+	binary.Read(dbf, binary.LittleEndian, &r.dbfHeaderLength)
+	binary.Read(dbf, binary.LittleEndian, &r.dbfRecordLength)
 
-	r.dbf.Seek(20, io.SeekCurrent) // skip padding
+	// skip padding
+	_, _ = r.shp.Read(make([]byte, 20))
+
 	numFields := int(math.Floor(float64(r.dbfHeaderLength-33) / 32.0))
 	r.dbfFields = make([]Field, numFields)
-	binary.Read(r.dbf, binary.LittleEndian, &r.dbfFields)
+	binary.Read(dbf, binary.LittleEndian, &r.dbfFields)
 	return
 }
 
@@ -237,13 +320,17 @@ func (r *Reader) AttributeCount() int {
 // ReadAttribute returns the attribute value at row for field in
 // the DBF table as a string. Both values starts at 0.
 func (r *Reader) ReadAttribute(row int, field int) string {
+	if r.dbfSeek == nil {
+		return ""
+	}
+
 	r.openDbf() // make sure we have a dbf file to read from
 	seekTo := 1 + int64(r.dbfHeaderLength) + (int64(row) * int64(r.dbfRecordLength))
 	for n := 0; n < field; n++ {
 		seekTo += int64(r.dbfFields[n].Size)
 	}
-	r.dbf.Seek(seekTo, io.SeekStart)
+	r.dbfSeek.Seek(seekTo, io.SeekStart)
 	buf := make([]byte, r.dbfFields[field].Size)
-	r.dbf.Read(buf)
+	r.dbfSeek.Read(buf)
 	return strings.Trim(string(buf[:]), " ")
 }

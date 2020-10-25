@@ -118,11 +118,24 @@ func TestZipReaderAttribute(t *testing.T) {
 	skipOrDownloadNaturalEarth(t, b+".zip")
 	d := unzipToTempDir(t, b+".zip")
 	defer os.RemoveAll(d)
-	lr, err := Open(filepath.Join(d, b+".shp"))
+
+	dbf, err := os.Open(b + ".dbf")
+	if err != nil {
+		t.Fatal("Failed to open databaseFile: " + b + ".dbf (" + err.Error() + ")")
+	}
+	defer func() { _ = dbf.Close() }()
+
+	shp, err := os.Open(b + ".shp")
+	if err != nil {
+		t.Fatal("Failed to open shapefile: " + b + ".shp (" + err.Error() + ")")
+	}
+	defer func() { _ = shp.Close() }()
+
+	lr, err := New(shp, WithSeekableDBF(dbf))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lr.Close()
+
 	zr, err := OpenZip(b + ".zip")
 	if os.IsNotExist(err) {
 		t.Skipf("Skipping test, as Natural Earth dataset wasn't found")
@@ -233,4 +246,34 @@ func TestNaturalEarthZip(t *testing.T) {
 	for _, m := range metas {
 		t.Log(m.Attributes["name"])
 	}
+}
+
+func TestShapesInZip(t *testing.T) {
+	p := "ne_110m_admin_0_countries"
+	skipOrDownloadNaturalEarth(t, p+".zip")
+
+	z, err := zip.OpenReader(p + ".zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	shapeFiles := shapesInZip(z)
+
+	if shapeFiles.countExt(".shp") != 1 {
+		t.Fatalf("Expected 1 shp file, got %d", shapeFiles.countExt(".shp"))
+	}
+
+	set, ok := shapeFiles[p]
+	if !ok {
+		t.Fatalf("Expected to find file [%s]", p)
+	}
+
+	if _, ok := set[".shp"]; !ok {
+		t.Fatalf("Expected to find file [%s.shp]", p)
+	}
+
+	if _, ok := set[".dbf"]; !ok {
+		t.Fatalf("Expected to find file [%s.dbf]", p)
+	}
+
 }
