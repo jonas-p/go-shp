@@ -498,8 +498,8 @@ func newReadSeekCloser(b []byte) readSeekCloser {
 
 func TestReadInvalidShapeType(t *testing.T) {
 	record := []byte{
-		0, 0, 0, 0,
-		0, 0, 0, 0,
+		0, 0, 0, 1,
+		0, 0, 0, 2,
 		255, 255, 255, 255, // shape type
 	}
 
