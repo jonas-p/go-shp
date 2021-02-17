@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -71,8 +72,9 @@ func ShapesInZip(zipFilePath string) ([]string, error) {
 
 func shapesInZip(z *zip.ReadCloser) []*zip.File {
 	var shapeFiles []*zip.File
+	hiddenDirRegex := regexp.MustCompile("(?i)(__MACOSX|^\\.|\\/\\.)")
 	for _, f := range z.File {
-		if strings.HasSuffix(f.Name, ".shp") {
+		if strings.HasSuffix(f.Name, ".shp") && !hiddenDirRegex.MatchString(f.Name) {
 			shapeFiles = append(shapeFiles, f)
 		}
 	}
