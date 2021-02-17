@@ -135,8 +135,15 @@ func (sr *seqReader) Next() bool {
 	er := &errReader{Reader: sr.shp}
 	binary.Read(er, binary.BigEndian, &num)
 	binary.Read(er, binary.BigEndian, &size)
-	binary.Read(er, binary.LittleEndian, &shapetype)
 
+	// Per ESRI documentation, size is the number of 16-bit words left in the record.
+	// The various implementations of shape.Read() attempt to read the maximum amount
+	// of data possible for the shape type, and could read more than this quantity.
+	// LimitReader is used to prevent this from occurring.
+	// TODO: modify the shape implementations to be cognizant of the size.
+	lr := io.LimitReader(er, int64(size)*2)
+
+	binary.Read(lr, binary.LittleEndian, &shapetype)
 	if er.e != nil {
 		if er.e != io.EOF {
 			sr.err = fmt.Errorf("Error when reading shapefile header: %v", er.e)
@@ -152,7 +159,7 @@ func (sr *seqReader) Next() bool {
 		sr.err = fmt.Errorf("Error decoding shape type: %v", err)
 		return false
 	}
-	sr.shape.read(er)
+	sr.shape.read(lr)
 	switch {
 	case er.e == io.EOF:
 		// io.EOF means end-of-file was reached gracefully after all

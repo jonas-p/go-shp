@@ -160,7 +160,15 @@ func (r *Reader) Next() bool {
 	er := &errReader{Reader: r.shp}
 	binary.Read(er, binary.BigEndian, &r.num)
 	binary.Read(er, binary.BigEndian, &size)
-	binary.Read(er, binary.LittleEndian, &shapetype)
+
+	// Per ESRI documentation, size is the number of 16-bit words left in the record.
+	// The various implementations of shape.Read() attempt to read the maximum amount
+	// of data possible for the shape type, and could read more than this quantity.
+	// LimitReader is used to prevent this from occurring.
+	// TODO: modify the shape implementations to be cognizant of the size.
+	lr := io.LimitReader(er, int64(size)*2)
+
+	binary.Read(lr, binary.LittleEndian, &shapetype)
 	if er.e != nil {
 		if er.e != io.EOF {
 			r.err = fmt.Errorf("Error when reading metadata of next shape: %v", er.e)
@@ -176,7 +184,7 @@ func (r *Reader) Next() bool {
 		r.err = fmt.Errorf("Error decoding shape type: %v", err)
 		return false
 	}
-	r.shape.read(er)
+	r.shape.read(lr)
 	if er.e != nil {
 		r.err = fmt.Errorf("Error while reading next shape: %v", er.e)
 		return false
