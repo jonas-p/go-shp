@@ -354,6 +354,21 @@ func (w *ZipWriter) BBox() Box {
 	return w.bbox
 }
 
+// WriteEmptyRecord creates empty DBF file
+func (w *ZipWriter) WriteEmptyRecord() error {
+	if w.dbf == nil {
+		return errors.New("Initialize DBF by using SetFields first")
+	}
+	if !w.headerSent {
+		w.writeDbfHeader(w.dbf)
+	} else {
+		return errors.New("Header already sent")
+	}
+	w.bbox.MaxX = -1.0
+	w.bbox.MaxY = -1.0
+	return nil
+}
+
 // WriteRecord appends new row to DBF
 func (w *ZipWriter) WriteRecord(values []interface{}) error {
 	if w.dbf == nil {

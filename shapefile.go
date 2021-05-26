@@ -2,6 +2,7 @@ package shp
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"strings"
 )
@@ -28,6 +29,32 @@ const (
 	MULTIPOINTM ShapeType = 28
 	MULTIPATCH  ShapeType = 31
 )
+
+var shapeTypeNameMap = map[string]ShapeType{
+	"NULL":        NULL,
+	"POINT":       POINT,
+	"POLYLINE":    POLYLINE,
+	"POLYGON":     POLYGON,
+	"MULTIPOINT":  MULTIPOINT,
+	"POINTZ":      POINTZ,
+	"POLYLINEZ":   POLYLINEZ,
+	"POLYGONZ":    POLYGONZ,
+	"MULTIPOINTZ": MULTIPOINTZ,
+	"POINTM":      POINTM,
+	"POLYLINEM":   POLYLINEM,
+	"POLYGONM":    POLYGONM,
+	"MULTIPOINTM": MULTIPOINTM,
+	"MULTIPATCH":  MULTIPATCH,
+}
+
+// ParseShapeType tries to extract ShapeType from string
+func ParseShapeType(typ string) (ShapeType, error) {
+	t, ok := shapeTypeNameMap[strings.ToUpper(typ)]
+	if !ok {
+		return NULL, errors.New("invalid shape type")
+	}
+	return t, nil
+}
 
 // Box structure made up from four coordinates. This type
 // is used to represent bounding boxes
