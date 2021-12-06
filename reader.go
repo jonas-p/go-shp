@@ -38,6 +38,22 @@ type readSeekCloser interface {
 	io.Closer
 }
 
+// OpenBytes opens a Shapefile Bytes for reading.
+func OpenBytes(data []byte, filename string) (*Reader, error) {
+	filename = filename[0 : len(filename)-3]
+	arquivo := &MyFile{
+		Reader: bytes.NewReader(data),
+		mif: myFileInfo{
+			name: filename,
+			data: data,
+		},
+	}
+
+	s := &Reader{filename: filename, shp: arquivo}
+	s.readHeaders()
+	return s, nil
+}
+
 // Open opens a Shapefile for reading.
 func Open(filename string) (*Reader, error) {
 	ext := filepath.Ext(filename)
