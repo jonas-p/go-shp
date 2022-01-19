@@ -610,3 +610,14 @@ func DateField(name string) Field {
 	copy(field.Name[:], []byte(name))
 	return field
 }
+
+type Attr interface {
+	Field() Field
+	Value() interface{}
+}
+
+type Record interface {
+	Shape() Shape
+	// Fields() []Field
+	Attributes() []Attr
+}

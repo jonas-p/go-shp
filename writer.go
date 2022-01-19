@@ -33,6 +33,11 @@ type writeSeekCloser interface {
 	io.Closer
 }
 
+type CreateOptions struct {
+	Projection    string
+	WithoutDotPrj bool
+}
+
 // Create returns a point to new Writer and the first error that was
 // encountered. In case an error occurred the returned Writer point will be nil
 // This also creates a corresponding SHX file. It is important to use Close()
@@ -40,7 +45,7 @@ type writeSeekCloser interface {
 // and DBF).
 // If filename does not end on ".shp" already, it will be treated as the basename
 // for the file and the ".shp" extension will be appended to that name.
-func Create(filename string, t ShapeType) (*Writer, error) {
+func Create(filename string, t ShapeType, option *CreateOptions) (*Writer, error) {
 	if strings.HasSuffix(strings.ToLower(filename), ".shp") {
 		filename = filename[0 : len(filename)-4]
 	}
@@ -52,6 +57,24 @@ func Create(filename string, t ShapeType) (*Writer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if !(option != nil && option.WithoutDotPrj) {
+		prj, err := os.Create(filename + ".prj")
+		if err != nil {
+			return nil, err
+		}
+		defer prj.Close()
+
+		projection := `GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]`
+		if option != nil && option.Projection != "" {
+			projection = option.Projection
+		}
+		_, err = prj.WriteString(projection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	shp.Seek(100, io.SeekStart)
 	shx.Seek(100, io.SeekStart)
 	w := &Writer{
@@ -174,7 +197,7 @@ func Append(filename string) (*Writer, error) {
 // a record in the SHX file and DBF file (if it is
 // initialized). Returns the index of the written object
 // which can be used in WriteAttribute.
-func (w *Writer) Write(shape Shape) int32 {
+func (w *Writer) Write(shape Shape) int {
 	// increate bbox
 	if w.num == 0 {
 		w.bbox = shape.BBox()
@@ -203,7 +226,7 @@ func (w *Writer) Write(shape Shape) int32 {
 		w.writeEmptyRecord()
 	}
 
-	return w.num - 1
+	return int(w.num - 1)
 }
 
 // Close closes the Writer. This must be used at the end of
@@ -315,6 +338,12 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) error {
 	switch v := value.(type) {
 	case int:
 		buf = []byte(strconv.Itoa(v))
+	case int64:
+		buf = []byte(strconv.FormatInt(v, 10))
+	case uint:
+		buf = []byte(strconv.FormatUint(uint64(v), 10))
+	case uint64:
+		buf = []byte(strconv.FormatUint(v, 10))
 	case float64:
 		precision := w.dbfFields[field].Precision
 		buf = []byte(strconv.FormatFloat(v, 'f', int(precision), 64))
@@ -342,4 +371,16 @@ func (w *Writer) WriteAttribute(row int, field int, value interface{}) error {
 // BBox returns the bounding box of the Writer.
 func (w *Writer) BBox() Box {
 	return w.bbox
+}
+
+func (w *Writer) WriteRecord(r Record) error {
+	row := w.Write(r.Shape())
+	for n, attr := range r.Attributes() {
+		err := w.WriteAttribute(row, n, attr.Value())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

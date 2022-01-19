@@ -35,7 +35,7 @@ func TestAppend(t *testing.T) {
 		{10.0, 10.0},
 	}
 
-	shape, err := Create(filename+".shp", POINT)
+	shape, err := Create(filename+".shp", POINT, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestWritePoint(t *testing.T) {
 		{10.0, 10.0},
 	}
 
-	shape, err := Create(filename+".shp", POINT)
+	shape, err := Create(filename+".shp", POINT, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestWritePolyLine(t *testing.T) {
 		{Point{10.0, 10.0}, Point{15.0, 15.0}},
 	}
 
-	shape, err := Create(filename+".shp", POLYLINE)
+	shape, err := Create(filename+".shp", POLYLINE, nil)
 	if err != nil {
 		t.Log(shape, err)
 	}
