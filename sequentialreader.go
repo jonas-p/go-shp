@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"strings"
 )
@@ -81,19 +80,19 @@ func (sr *seqReader) readHeaders() {
 
 	er := &errReader{Reader: sr.shp}
 	// shp headers
-	io.CopyN(ioutil.Discard, er, 24)
+	io.CopyN(io.Discard, er, 24)
 	var l int32
 	binary.Read(er, binary.BigEndian, &l)
 	sr.filelength = int64(l) * 2
-	io.CopyN(ioutil.Discard, er, 4)
+	io.CopyN(io.Discard, er, 4)
 	binary.Read(er, binary.LittleEndian, &sr.geometryType)
 	sr.bbox.MinX = readFloat64(er)
 	sr.bbox.MinY = readFloat64(er)
 	sr.bbox.MaxX = readFloat64(er)
 	sr.bbox.MaxY = readFloat64(er)
-	io.CopyN(ioutil.Discard, er, 32) // skip four float64: Zmin, Zmax, Mmin, Max
+	io.CopyN(io.Discard, er, 32) // skip four float64: Zmin, Zmax, Mmin, Max
 	if er.e != nil {
-		sr.err = fmt.Errorf("Error when reading SHP header: %v", er.e)
+		sr.err = fmt.Errorf("error when reading SHP header: %v", er.e)
 		return
 	}
 
@@ -102,22 +101,22 @@ func (sr *seqReader) readHeaders() {
 	if sr.dbf == nil {
 		return
 	}
-	io.CopyN(ioutil.Discard, er, 4)
+	io.CopyN(io.Discard, er, 4)
 	binary.Read(er, binary.LittleEndian, &sr.dbfNumRecords)
 	binary.Read(er, binary.LittleEndian, &sr.dbfHeaderLength)
 	binary.Read(er, binary.LittleEndian, &sr.dbfRecordLength)
-	io.CopyN(ioutil.Discard, er, 20) // skip padding
+	io.CopyN(io.Discard, er, 20) // skip padding
 	numFields := int(math.Floor(float64(sr.dbfHeaderLength-33) / 32.0))
 	sr.dbfFields = make([]Field, numFields)
 	binary.Read(er, binary.LittleEndian, &sr.dbfFields)
 	buf := make([]byte, 1)
 	er.Read(buf[:])
 	if er.e != nil {
-		sr.err = fmt.Errorf("Error when reading DBF header: %v", er.e)
+		sr.err = fmt.Errorf("error when reading DBF header: %v", er.e)
 		return
 	}
 	if buf[0] != 0x0d {
-		sr.err = fmt.Errorf("Field descriptor array terminator not found")
+		sr.err = fmt.Errorf("field descriptor array terminator not found")
 		return
 	}
 	sr.dbfRow = make([]byte, sr.dbfRecordLength)
@@ -139,7 +138,7 @@ func (sr *seqReader) Next() bool {
 
 	if er.e != nil {
 		if er.e != io.EOF {
-			sr.err = fmt.Errorf("Error when reading shapefile header: %v", er.e)
+			sr.err = fmt.Errorf("error when reading shapefile header: %v", er.e)
 		} else {
 			sr.err = io.EOF
 		}
@@ -149,7 +148,7 @@ func (sr *seqReader) Next() bool {
 	var err error
 	sr.shape, err = newShape(shapetype)
 	if err != nil {
-		sr.err = fmt.Errorf("Error decoding shape type: %v", err)
+		sr.err = fmt.Errorf("error decoding shape type: %v", err)
 		return false
 	}
 	sr.shape.read(er)
@@ -160,25 +159,25 @@ func (sr *seqReader) Next() bool {
 		// iterating over all shapes.
 		er.e = nil
 	case er.e != nil:
-		sr.err = fmt.Errorf("Error while reading next shape: %v", er.e)
+		sr.err = fmt.Errorf("error while reading next shape: %v", er.e)
 		return false
 	}
 	skipBytes := int64(size)*2 + 8 - er.n
-	_, ce := io.CopyN(ioutil.Discard, er, skipBytes)
+	_, ce := io.CopyN(io.Discard, er, skipBytes)
 	if er.e != nil {
 		sr.err = er.e
 		return false
 	}
 	if ce != nil {
-		sr.err = fmt.Errorf("Error when discarding bytes on sequential read: %v", ce)
+		sr.err = fmt.Errorf("error when discarding bytes on sequential read: %v", ce)
 		return false
 	}
 	if _, err := io.ReadFull(sr.dbf, sr.dbfRow); err != nil {
-		sr.err = fmt.Errorf("Error when reading DBF row: %v", err)
+		sr.err = fmt.Errorf("error when reading DBF row: %v", err)
 		return false
 	}
-	if sr.dbfRow[0] != 0x20 && sr.dbfRow[0] != 0x2a {
-		sr.err = fmt.Errorf("Attribute row %d starts with incorrect deletion indicator", num)
+	if (len(sr.dbfRow) == 0) || (sr.dbfRow[0] != 0x20 && sr.dbfRow[0] != 0x2a) {
+		sr.err = fmt.Errorf("attribute row %d starts with incorrect deletion indicator", num)
 	}
 	return sr.err == nil
 }
@@ -212,8 +211,13 @@ func (sr *seqReader) Err() error {
 
 // Close closes the seqReader and free all the allocated resources.
 func (sr *seqReader) Close() error {
-	if err := sr.shp.Close(); err != nil {
-		return err
+	if sr.shp != nil {
+		if err := sr.shp.Close(); err != nil {
+			return err
+		}
+	}
+	if sr.dbf == nil {
+		return nil
 	}
 	if err := sr.dbf.Close(); err != nil {
 		return err
