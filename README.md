@@ -1,22 +1,17 @@
 go-shp
 ======
 
-[![Build Status](https://travis-ci.org/jonas-p/go-shp.svg?branch=master)](https://travis-ci.org/jonas-p/go-shp)
-[![Build status](https://ci.appveyor.com/api/projects/status/b64sntax4kxlouxa?svg=true)](https://ci.appveyor.com/project/fawick/go-shp)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jonas-p/go-shp)](https://goreportcard.com/report/github.com/jonas-p/go-shp)
-[![Codevov](https://codecov.io/gh/jonas-p/go-shp/branch/master/graphs/badge.svg)](https://codecov.io/gh/jonas-p/go-shp)
+![Build status](https://github.com/karnott/go-shp/actions/workflows/build.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/karnott/go-shp)](https://goreportcard.com/report/github.com/jonas-p/go-shp)
 
 Go library for reading and writing ESRI Shapefiles. This is a pure Golang implementation based on the ESRI Shapefile technical description.
 
 ### Usage
-#### Installation
-
-    go get github.com/jonas-p/go-shp
     
 #### Importing
 
 ```go
-import "github.com/jonas-p/go-shp"
+import "github.com/karnott/go-shp"
 ```
 
 ### Examples
@@ -83,5 +78,5 @@ for n, point := range points {
 
 ### Resources
 
-- [Documentation on godoc.org](http://godoc.org/github.com/jonas-p/go-shp)
+- [Documentation on godoc.org](http://godoc.org/github.com/karnott/go-shp)
 - [ESRI Shapefile Technical Description](http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf)
